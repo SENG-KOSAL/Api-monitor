@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 
+from app.database.connection import engine
+
 app = FastAPI(
     title="API Monitor",
     description="Simple API health monitoring service",
@@ -19,3 +21,17 @@ def health():
     return {
         "status": "ok"
     }
+
+
+@app.get("/database-health")
+def database_health():
+    try:
+        with engine.connect():
+            return {
+                "database": "connected"
+            }
+    except Exception as e:
+        return {
+            "database": "error",
+            "message": str(e),
+        }

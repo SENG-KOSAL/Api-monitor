@@ -1,12 +1,15 @@
 from fastapi import FastAPI
 
 from app.database.connection import engine
+from app.routers import monitors
 
 app = FastAPI(
     title="API Monitor",
     description="Simple API health monitoring service",
     version="1.0.0",
 )
+
+app.include_router(monitors.router)
 
 
 @app.get("/")

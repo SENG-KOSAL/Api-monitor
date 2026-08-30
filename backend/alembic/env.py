@@ -1,13 +1,24 @@
 from logging.config import fileConfig
+import os
+from dotenv import load_dotenv
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
 
+# Load environment variables
+load_dotenv()
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
+
+# Override the sqlalchemy.url with the actual DATABASE_URL from environment
+DATABASE_URL = os.getenv("DATABASE_URL")
+if DATABASE_URL:
+    config.set_main_option("sqlalchemy.url", DATABASE_URL)
+    print(f"DATABASE_URL from env: {DATABASE_URL}")  # DEBUG
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
@@ -20,8 +31,10 @@ if config.config_file_name is not None:
 # target_metadata = mymodel.Base.metadata
 from app.database.connection import Base
 from app.model.monitor import Monitor
+from app.model.successss import Successss
 
 target_metadata = Base.metadata
+print(f"Target metadata tables: {list(target_metadata.tables.keys())}")  # DEBUG
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -60,8 +73,18 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
+    # this callback is used to prevent an auto-migration from being generated
+    # when there are no changes to the schema
+    # example: http://stackoverflow.com/questions/27762895/do-not-generate-migrations-for-tables-that-are-already-present
+    def process_revision_directives(context, revision, directives):
+        if getattr(config.cmd_opts, 'autogenerate', False):
+            script = directives[0]
+            if script.upgrade_ops.is_empty():
+                directives[:] = []
+                print('No changes in schema detected.')
+
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
+        config.get_section(config.config_ini_section),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )

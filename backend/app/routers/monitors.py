@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Dict, Any
 from pydantic import HttpUrl
 
 from app.database.connection import SessionLocal
 from app.model.monitor import Monitor
 from app.schemas.monitor import MonitorCreate, MonitorUpdate, MonitorResponse
+from app.services import check_health
 
 
 router = APIRouter(
@@ -97,6 +98,20 @@ def update_monitor(monitor_id: int, monitor: MonitorUpdate, db: Session = Depend
     db.commit()
     db.refresh(db_monitor)
     return db_monitor
+
+
+@router.post("/{monitor_id}/check", response_model=Dict[str, Any])
+def check_monitor_health(monitor_id: int, db: Session = Depends(get_db)):
+    """
+    Perform a health check on a specific monitor.
+    """
+    monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
+    if monitor is None:
+        raise HTTPException(status_code=404, detail="Monitor not found")
+    
+    # Perform the health check
+    result = check_health(monitor.url)
+    return result
 
 
 @router.delete("/{monitor_id}", status_code=status.HTTP_204_NO_CONTENT)

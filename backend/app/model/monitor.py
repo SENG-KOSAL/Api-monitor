@@ -1,7 +1,8 @@
 from datetime import datetime
+from typing import List
 
 from sqlalchemy import Boolean, DateTime, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.connection import Base
 
@@ -48,4 +49,10 @@ class Monitor(Base):
         default=datetime.utcnow,
         onupdate=datetime.utcnow,
         nullable=False,
+    )
+
+    check_results: Mapped[List["CheckResult"]] = relationship(
+        "CheckResult",
+        cascade="all, delete-orphan",
+        back_populates="monitor",
     )

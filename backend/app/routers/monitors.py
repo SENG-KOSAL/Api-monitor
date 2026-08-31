@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List, Dict, Any
+from typing import List
 from pydantic import HttpUrl
 
 from app.database.connection import SessionLocal
 from app.model.monitor import Monitor
+from app.model.check_result import CheckResult
 from app.schemas.monitor import MonitorCreate, MonitorUpdate, MonitorResponse
+from app.schemas.check_result import CheckResultResponse
 from app.services import check_health
 
 
@@ -100,7 +102,7 @@ def update_monitor(monitor_id: int, monitor: MonitorUpdate, db: Session = Depend
     return db_monitor
 
 
-@router.post("/{monitor_id}/check", response_model=Dict[str, Any])
+@router.post("/{monitor_id}/check", response_model=CheckResultResponse)
 def check_monitor_health(monitor_id: int, db: Session = Depends(get_db)):
     """
     Perform a health check on a specific monitor.
@@ -111,7 +113,19 @@ def check_monitor_health(monitor_id: int, db: Session = Depends(get_db)):
     
     # Perform the health check
     result = check_health(monitor.url)
-    return result
+
+    # Persist as CheckResult row
+    check_result = CheckResult(
+        monitor_id=monitor.id,
+        status_code=result["status_code"],
+        response_time=result["response_time"],
+        error=result["error"],
+    )
+    db.add(check_result)
+    db.commit()
+    db.refresh(check_result)
+
+    return check_result
 
 
 @router.delete("/{monitor_id}", status_code=status.HTTP_204_NO_CONTENT)

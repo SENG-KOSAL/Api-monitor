@@ -3,6 +3,17 @@ import time
 from typing import Dict, Any, Optional
 
 
+MAX_BODY_LENGTH = 5000
+
+
+def _truncate_body(text: Optional[str]) -> Optional[str]:
+    if text is None:
+        return None
+    if len(text) > MAX_BODY_LENGTH:
+        return text[:MAX_BODY_LENGTH]
+    return text
+
+
 def check_health(url: str, timeout: float = 10.0) -> Dict[str, Any]:
     """
     Perform a health check on the given URL.
@@ -14,8 +25,11 @@ def check_health(url: str, timeout: float = 10.0) -> Dict[str, Any]:
     Returns:
         A dictionary with the following keys:
         - status_code: HTTP status code or None if request failed
+        - reason_phrase: HTTP reason phrase (e.g. "Unauthorized") or None
         - response_time: Response time in seconds
         - error: Error message if request failed, None otherwise
+        - headers: Response headers as a dict, or None if request failed
+        - body: Response body text (truncated), or None if request failed
     """
     start_time = time.time()
     try:
@@ -23,29 +37,41 @@ def check_health(url: str, timeout: float = 10.0) -> Dict[str, Any]:
         response_time = time.time() - start_time
         return {
             "status_code": response.status_code,
+            "reason_phrase": response.reason_phrase,
             "response_time": response_time,
-            "error": None
+            "error": None,
+            "headers": dict(response.headers),
+            "body": _truncate_body(response.text),
         }
     except httpx.TimeoutException:
         response_time = time.time() - start_time
         return {
             "status_code": None,
+            "reason_phrase": None,
             "response_time": response_time,
-            "error": "Request timeout"
+            "error": "Request timeout",
+            "headers": None,
+            "body": None,
         }
     except httpx.RequestError as e:
         response_time = time.time() - start_time
         return {
             "status_code": None,
+            "reason_phrase": None,
             "response_time": response_time,
-            "error": str(e)
+            "error": str(e),
+            "headers": None,
+            "body": None,
         }
     except Exception as e:
         response_time = time.time() - start_time
         return {
             "status_code": None,
+            "reason_phrase": None,
             "response_time": response_time,
-            "error": f"Unexpected error: {str(e)}"
+            "error": f"Unexpected error: {str(e)}",
+            "headers": None,
+            "body": None,
         }
 
 

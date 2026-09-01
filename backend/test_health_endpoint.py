@@ -27,9 +27,13 @@ def test_health_check_endpoint():
     print(f"Health check result: {result}")
     
     # Verify the response has expected fields
+    assert "id" in result
+    assert "monitor_id" in result
     assert "status_code" in result
     assert "response_time" in result
     assert "error" in result
+    assert "checked_at" in result
+    assert result["monitor_id"] == monitor_id
     assert result["status_code"] == 200
     assert result["error"] is None
     assert isinstance(result["response_time"], float)

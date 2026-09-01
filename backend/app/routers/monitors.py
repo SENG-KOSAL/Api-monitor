@@ -118,8 +118,11 @@ def check_monitor_health(monitor_id: int, db: Session = Depends(get_db)):
     check_result = CheckResult(
         monitor_id=monitor.id,
         status_code=result["status_code"],
+        reason_phrase=result.get("reason_phrase"),
         response_time=result["response_time"],
         error=result["error"],
+        headers=result.get("headers"),
+        body=result.get("body"),
     )
     db.add(check_result)
     db.commit()

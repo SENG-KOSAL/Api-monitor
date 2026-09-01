@@ -45,28 +45,29 @@ api-monitor/
    ```
 
 3. Set up the database:
-   - Create a PostgreSQL database named `api_monitor` (or modify the DATABASE_URL in .env)
+   - Create a PostgreSQL database named `api_monitor`
    - Ensure PostgreSQL is running on localhost:5432
    - Update the .env file with your database credentials if different:
      ```
      DATABASE_URL=postgresql+psycopg2://postgres:112233@localhost:5432/api_monitor
      ```
+   - Run the migration:
+     ```bash
+     alembic upgrade head
+     ```
 
 ## Database Setup
 
-Note: This application does not include automatic database migration or schema creation tools. You will need to:
+This application uses Alembic for database migrations.
 
-1. Create the necessary database tables manually, or
-2. Add SQLAlchemy models and migration tools (like Alembic) to manage your database schema
-
-To create tables manually, you would typically:
-1. Define SQLAlchemy models in the application
-2. Use the engine to create tables:
-   ```python
-   from app.database.connection import engine
-   from your_models import Base  # Import your Base class
-   Base.metadata.create_all(bind=engine)
+1. Create a PostgreSQL database named `api_monitor`
+2. Run the Alembic migration to set up the database schema:
+   ```bash
+   cd backend
+   alembic upgrade head
    ```
+
+This will apply all pending migrations and create the necessary tables.
 
 ## Running the Application
 
@@ -87,8 +88,8 @@ The API will be available at:
 ```bash
 cd backend
 uvicorn app.main:app --host 0.0.0.0 --port 8000
+uvicorn app.main:app --host 192.168.1.11 --port 8000
 ```
-
 ## API Endpoints
 
 - `GET /` - Returns a welcome message

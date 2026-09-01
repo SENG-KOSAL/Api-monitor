@@ -138,6 +138,32 @@ def check_monitor_health(monitor_id: int, db: Session = Depends(get_db)):
     return check_result
 
 
+@router.get("/{monitor_id}/results", response_model=List[CheckResultResponse])
+def get_monitor_results(
+    monitor_id: int,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+):
+    """
+    Retrieve health check history for a specific monitor.
+    Results are ordered by most recent first, bounded by limit.
+    """
+    monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
+    if monitor is None:
+        raise HTTPException(status_code=404, detail="Monitor not found")
+
+    results = (
+        db.query(CheckResult)
+        .filter(CheckResult.monitor_id == monitor_id)
+        .order_by(CheckResult.checked_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    return results
+
+
 @router.delete("/{monitor_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_monitor(monitor_id: int, db: Session = Depends(get_db)):
     """

@@ -1,11 +1,14 @@
 "use client";
 
 import { use } from "react";
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { monitorsAPI } from "@/lib/api";
-import { Monitor } from "@/types";
+import { motion } from "framer-motion";
+import { useMonitor } from "@/hooks/use-monitors";
 import MonitorForm from "@/components/MonitorForm";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, ArrowLeft, AlertCircle } from "lucide-react";
 
 export default function EditMonitorPage({
   params,
@@ -16,29 +19,15 @@ export default function EditMonitorPage({
   const monitorId = parseInt(id, 10);
   const router = useRouter();
 
-  const [monitor, setMonitor] = useState<Monitor | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchMonitor = async () => {
-      try {
-        const data = await monitorsAPI.getById(monitorId);
-        setMonitor(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load monitor");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchMonitor();
-  }, [monitorId]);
+  const { data: monitor, isLoading, error } = useMonitor(monitorId);
 
   if (isLoading) {
     return (
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center py-12 text-gray-500">Loading monitor...</div>
+        <div className="flex items-center justify-center py-12 text-muted-foreground gap-2">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          Loading monitor...
+        </div>
       </div>
     );
   }
@@ -46,27 +35,45 @@ export default function EditMonitorPage({
   if (error || !monitor) {
     return (
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error || "Monitor not found"}
-        </div>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error?.message || "Monitor not found"}</AlertDescription>
+        </Alert>
       </div>
     );
   }
 
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-6">
-        <button
+      <motion.div
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="mb-6"
+      >
+        <Button
+          variant="ghost"
           onClick={() => router.push(`/monitors/${monitorId}`)}
-          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+          className="gap-1.5"
         >
-          &larr; Back to Monitor
-        </button>
-      </div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Edit Monitor</h1>
-      <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
-        <MonitorForm monitor={monitor} mode="edit" />
-      </div>
+          <ArrowLeft className="h-4 w-4" />
+          Back to Monitor
+        </Button>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl">Edit Monitor</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <MonitorForm monitor={monitor} mode="edit" />
+          </CardContent>
+        </Card>
+      </motion.div>
     </div>
   );
 }

@@ -1,13 +1,16 @@
 "use client";
 
 import { use } from "react";
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { monitorsAPI } from "@/lib/api";
-import { Monitor, CheckResult } from "@/types";
+import { motion } from "framer-motion";
+import { useMonitor, useMonitorResults, useCheckHealth } from "@/hooks/use-monitors";
 import StatusBadge from "@/components/StatusBadge";
 import CheckHistory from "@/components/CheckHistory";
 import DeleteButton from "@/components/DeleteButton";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, ArrowLeft, Pencil, Activity, Clock, Calendar, Zap, AlertCircle } from "lucide-react";
 
 export default function MonitorDetailPage({
   params,
@@ -18,48 +21,9 @@ export default function MonitorDetailPage({
   const monitorId = parseInt(id, 10);
   const router = useRouter();
 
-  const [monitor, setMonitor] = useState<Monitor | null>(null);
-  const [results, setResults] = useState<CheckResult[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isChecking, setIsChecking] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchData = async () => {
-    try {
-      const [monitorData, resultsData] = await Promise.all([
-        monitorsAPI.getById(monitorId),
-        monitorsAPI.getResults(monitorId),
-      ]);
-      setMonitor(monitorData);
-      setResults(resultsData);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load monitor");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, [monitorId]);
-
-  const handleCheckNow = async () => {
-    setIsChecking(true);
-    try {
-      await monitorsAPI.checkHealth(monitorId);
-      await fetchData();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Health check failed");
-    } finally {
-      setIsChecking(false);
-    }
-  };
-
-  useEffect(() => {
-    const interval = setInterval(fetchData, 10000);
-    return () => clearInterval(interval);
-  }, [monitorId]);
+  const { data: monitor, isLoading: monitorLoading, error: monitorError } = useMonitor(monitorId);
+  const { data: results = [], isLoading: resultsLoading } = useMonitorResults(monitorId);
+  const checkHealth = useCheckHealth();
 
   const getStatus = (): "healthy" | "error" | "unknown" => {
     if (!monitor?.is_active) return "unknown";
@@ -78,91 +42,141 @@ export default function MonitorDetailPage({
     return `${Math.floor(seconds / 3600)} hours`;
   };
 
-  if (isLoading) {
+  const handleCheckNow = async () => {
+    await checkHealth.mutateAsync(monitorId);
+  };
+
+  if (monitorLoading) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center py-12 text-gray-500">Loading monitor...</div>
+        <div className="flex items-center justify-center py-12 text-muted-foreground gap-2">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          Loading monitor...
+        </div>
       </div>
     );
   }
 
-  if (error || !monitor) {
+  if (monitorError || !monitor) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error || "Monitor not found"}
-        </div>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{monitorError?.message || "Monitor not found"}</AlertDescription>
+        </Alert>
       </div>
     );
   }
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-6">
-        <button
+      <motion.div
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="mb-6"
+      >
+        <Button
+          variant="ghost"
           onClick={() => router.push("/")}
-          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+          className="gap-1.5"
         >
-          &larr; Back to Monitors
-        </button>
-      </div>
+          <ArrowLeft className="h-4 w-4" />
+          Back to Monitors
+        </Button>
+      </motion.div>
 
-      <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6 mb-6">
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">{monitor.name}</h1>
-            <p className="text-gray-500 mt-1 break-all">{monitor.url}</p>
-          </div>
-          <StatusBadge status={getStatus()} isActive={monitor.is_active} />
-        </div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <Card className="mb-6">
+          <CardHeader>
+            <div className="flex justify-between items-start gap-4">
+              <div className="flex-1 min-w-0">
+                <CardTitle className="text-2xl">{monitor.name}</CardTitle>
+                <p className="text-muted-foreground mt-1 break-all">{monitor.url}</p>
+              </div>
+              <StatusBadge status={getStatus()} isActive={monitor.is_active} />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 py-4 border-t border-b">
+              <div className="flex items-start gap-2">
+                <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Interval</p>
+                  <p className="font-medium">{formatInterval(monitor.interval_seconds)}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <Activity className="h-4 w-4 text-muted-foreground mt-0.5" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Status</p>
+                  <p className="font-medium">{monitor.is_active ? "Active" : "Paused"}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Created</p>
+                  <p className="font-medium">
+                    {new Date(monitor.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <Zap className="h-4 w-4 text-muted-foreground mt-0.5" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Last Check</p>
+                  <p className="font-medium">
+                    {results.length > 0
+                      ? `${results[0].response_time.toFixed(0)}ms`
+                      : "Never"}
+                  </p>
+                </div>
+              </div>
+            </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 py-4 border-t border-b border-gray-100">
-          <div>
-            <p className="text-sm text-gray-500">Interval</p>
-            <p className="font-medium">{formatInterval(monitor.interval_seconds)}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Status</p>
-            <p className="font-medium">{monitor.is_active ? "Active" : "Paused"}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Created</p>
-            <p className="font-medium">
-              {new Date(monitor.created_at).toLocaleDateString()}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Last Check</p>
-            <p className="font-medium">
-              {results.length > 0
-                ? `${results[0].response_time.toFixed(0)}ms`
-                : "Never"}
-            </p>
-          </div>
-        </div>
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={handleCheckNow}
+                disabled={checkHealth.isPending}
+                className="gap-1.5"
+              >
+                {checkHealth.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Zap className="h-4 w-4" />
+                )}
+                {checkHealth.isPending ? "Checking..." : "Check Now"}
+              </Button>
+              <Button variant="outline" asChild className="gap-1.5">
+                <a href={`/monitors/${monitor.id}/edit`}>
+                  <Pencil className="h-4 w-4" />
+                  Edit
+                </a>
+              </Button>
+              <DeleteButton monitor={monitor} />
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
 
-        <div className="flex items-center gap-4">
-          <button
-            onClick={handleCheckNow}
-            disabled={isChecking}
-            className="px-4 py-2 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50"
-          >
-            {isChecking ? "Checking..." : "Check Now"}
-          </button>
-          <a
-            href={`/monitors/${monitor.id}/edit`}
-            className="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300"
-          >
-            Edit
-          </a>
-          <DeleteButton monitor={monitor} />
-        </div>
-      </div>
-
-      <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Check History</h2>
-        <CheckHistory results={results} />
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle>Check History</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CheckHistory results={results} isLoading={resultsLoading} />
+          </CardContent>
+        </Card>
+      </motion.div>
     </div>
   );
 }

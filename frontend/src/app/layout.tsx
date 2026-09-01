@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Link from "next/link";
 import "./globals.css";
+import Providers from "@/components/providers";
+import { Button } from "@/components/ui/button";
+import { Activity } from "lucide-react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,25 +31,23 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-gray-50">
-        <header className="bg-white shadow-sm border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <a href="/" className="flex items-center">
-                <span className="text-xl font-bold text-blue-600">
-                  API Monitor
-                </span>
-              </a>
-              <a
-                href="/monitors/new"
-                className="px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
-                + Add Monitor
-              </a>
+      <body className="min-h-full flex flex-col bg-background">
+        <Providers>
+          <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex justify-between items-center h-14">
+                <Link href="/" className="flex items-center gap-2">
+                  <Activity className="h-6 w-6 text-primary" />
+                  <span className="text-lg font-bold">API Monitor</span>
+                </Link>
+                <Button asChild>
+                  <Link href="/monitors/new">+ Add Monitor</Link>
+                </Button>
+              </div>
             </div>
-          </div>
-        </header>
-        <main className="flex-1">{children}</main>
+          </header>
+          <main className="flex-1">{children}</main>
+        </Providers>
       </body>
     </html>
   );

@@ -1,9 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { Monitor } from "@/types";
 import StatusBadge from "./StatusBadge";
 import DeleteButton from "./DeleteButton";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Clock, ExternalLink, Pencil } from "lucide-react";
 
 interface MonitorCardProps {
   monitor: Monitor;
@@ -13,9 +17,10 @@ interface MonitorCardProps {
     error: string | null;
   } | null;
   onRefresh?: () => void;
+  index?: number;
 }
 
-export default function MonitorCard({ monitor, lastCheck, onRefresh }: MonitorCardProps) {
+export default function MonitorCard({ monitor, lastCheck, onRefresh, index = 0 }: MonitorCardProps) {
   const getStatus = (): "healthy" | "error" | "unknown" => {
     if (!lastCheck) return "unknown";
     if (lastCheck.error) return "error";
@@ -32,51 +37,63 @@ export default function MonitorCard({ monitor, lastCheck, onRefresh }: MonitorCa
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow">
-      <div className="flex justify-between items-start mb-4">
-        <div className="flex-1 min-w-0">
-          <Link
-            href={`/monitors/${monitor.id}`}
-            className="text-lg font-semibold text-gray-900 hover:text-blue-600 truncate block"
-          >
-            {monitor.name}
-          </Link>
-          <p className="text-sm text-gray-500 truncate mt-1" title={monitor.url}>
-            {monitor.url}
-          </p>
-        </div>
-        <StatusBadge status={getStatus()} isActive={monitor.is_active} />
-      </div>
-
-      <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
-        <span>
-          Every {formatInterval(monitor.interval_seconds)}
-        </span>
-        {lastCheck && (
-          <span>
-            {lastCheck.response_time.toFixed(0)}ms
-            {lastCheck.status_code && ` • ${lastCheck.status_code}`}
-          </span>
-        )}
-      </div>
-
-      <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-        <Link
-          href={`/monitors/${monitor.id}`}
-          className="text-sm font-medium text-blue-600 hover:text-blue-800"
-        >
-          View Details
-        </Link>
-        <div className="flex items-center gap-2">
-          <Link
-            href={`/monitors/${monitor.id}/edit`}
-            className="text-sm font-medium text-gray-600 hover:text-gray-800"
-          >
-            Edit
-          </Link>
-          <DeleteButton monitor={monitor} onDeleted={onRefresh} />
-        </div>
-      </div>
-    </div>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: index * 0.1 }}
+    >
+      <Card className="group relative overflow-hidden transition-shadow hover:shadow-lg">
+        <CardHeader className="pb-3">
+          <div className="flex justify-between items-start gap-2">
+            <div className="flex-1 min-w-0">
+              <Link
+                href={`/monitors/${monitor.id}`}
+                className="text-lg font-semibold text-foreground hover:text-primary truncate block transition-colors"
+              >
+                {monitor.name}
+              </Link>
+              <p className="text-sm text-muted-foreground truncate mt-1 flex items-center gap-1" title={monitor.url}>
+                <ExternalLink className="h-3 w-3 shrink-0" />
+                {monitor.url}
+              </p>
+            </div>
+            <StatusBadge status={getStatus()} isActive={monitor.is_active} />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <Clock className="h-4 w-4" />
+              Every {formatInterval(monitor.interval_seconds)}
+            </span>
+            {lastCheck && (
+              <span className="font-medium text-foreground">
+                {lastCheck.response_time.toFixed(0)}ms
+                {lastCheck.status_code && <span className="text-muted-foreground"> • {lastCheck.status_code}</span>}
+              </span>
+            )}
+          </div>
+        </CardContent>
+        <CardFooter className="pt-3 border-t">
+          <div className="flex items-center justify-between w-full">
+            <Button variant="ghost" size="sm" asChild>
+              <Link href={`/monitors/${monitor.id}`} className="gap-1.5">
+                View Details
+                <ExternalLink className="h-3.5 w-3.5" />
+              </Link>
+            </Button>
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href={`/monitors/${monitor.id}/edit`} className="gap-1.5">
+                  <Pencil className="h-3.5 w-3.5" />
+                  Edit
+                </Link>
+              </Button>
+              <DeleteButton monitor={monitor} onDeleted={onRefresh} />
+            </div>
+          </div>
+        </CardFooter>
+      </Card>
+    </motion.div>
   );
 }

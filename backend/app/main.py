@@ -1,8 +1,13 @@
 import logging
+import os
 
+from dotenv import load_dotenv
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.database.connection import engine
+
+load_dotenv()
 from app.routers import monitors
 from app.services.scheduler import scheduler
 
@@ -15,6 +20,16 @@ app = FastAPI(
     title="API Monitor",
     description="Simple API health monitoring service",
     version="1.0.0",
+)
+
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(monitors.router)

@@ -26,13 +26,13 @@ async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> 
 
 export const monitorsAPI = {
   getAll: (skip = 0, limit = 100) =>
-    fetchAPI<Monitor[]>(`/monitors?skip=${skip}&limit=${limit}`),
+    fetchAPI<Monitor[]>(`/monitors/?skip=${skip}&limit=${limit}`),
 
   getById: (id: number) =>
     fetchAPI<Monitor>(`/monitors/${id}`),
 
   create: (data: MonitorCreate) =>
-    fetchAPI<Monitor>("/monitors", {
+    fetchAPI<Monitor>("/monitors/", {
       method: "POST",
       body: JSON.stringify(data),
     }),

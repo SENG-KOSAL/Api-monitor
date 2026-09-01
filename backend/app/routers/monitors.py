@@ -9,6 +9,7 @@ from app.model.check_result import CheckResult
 from app.schemas.monitor import MonitorCreate, MonitorUpdate, MonitorResponse
 from app.schemas.check_result import CheckResultResponse
 from app.services import check_health
+from app.services.scheduler import scheduler
 
 
 router = APIRouter(
@@ -68,6 +69,9 @@ def create_monitor(monitor: MonitorCreate, db: Session = Depends(get_db)):
     db.add(db_monitor)
     db.commit()
     db.refresh(db_monitor)
+
+    scheduler.add_monitor(db_monitor)
+
     return db_monitor
 
 
@@ -99,6 +103,9 @@ def update_monitor(monitor_id: int, monitor: MonitorUpdate, db: Session = Depend
     
     db.commit()
     db.refresh(db_monitor)
+
+    scheduler.update_monitor(db_monitor)
+
     return db_monitor
 
 
@@ -139,7 +146,9 @@ def delete_monitor(monitor_id: int, db: Session = Depends(get_db)):
     db_monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
     if db_monitor is None:
         raise HTTPException(status_code=404, detail="Monitor not found")
-    
+
+    scheduler.remove_monitor(monitor_id)
+
     db.delete(db_monitor)
     db.commit()
     return None

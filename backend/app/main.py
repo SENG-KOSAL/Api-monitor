@@ -1,7 +1,15 @@
+import logging
+
 from fastapi import FastAPI
 
 from app.database.connection import engine
 from app.routers import monitors
+from app.services.scheduler import scheduler
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
 
 app = FastAPI(
     title="API Monitor",
@@ -10,6 +18,16 @@ app = FastAPI(
 )
 
 app.include_router(monitors.router)
+
+
+@app.on_event("startup")
+async def startup_event():
+    scheduler.start()
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    scheduler.stop()
 
 
 @app.get("/")

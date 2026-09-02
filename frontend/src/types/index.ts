@@ -38,3 +38,17 @@ export interface MonitorWithStatus extends Monitor {
   lastCheck?: CheckResult | null;
   status?: "healthy" | "error" | "unknown";
 }
+
+export interface UptimeStats {
+  period: string; // "24h" | "7d" | "30d"
+  uptime_percentage: number | null;
+  total_checks: number;
+  successful_checks: number;
+  failed_checks: number;
+}
+
+export interface MonitorUptime {
+  day: UptimeStats;
+  week: UptimeStats;
+  month: UptimeStats;
+}

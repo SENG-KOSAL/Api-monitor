@@ -3,9 +3,10 @@
 import { use } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { useMonitor, useMonitorResults, useCheckHealth } from "@/hooks/use-monitors";
+import { useMonitor, useMonitorResults, useMonitorUptime, useCheckHealth } from "@/hooks/use-monitors";
 import StatusBadge from "@/components/StatusBadge";
 import CheckHistory from "@/components/CheckHistory";
+import UptimeStats from "@/components/UptimeStats";
 import DeleteButton from "@/components/DeleteButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +24,7 @@ export default function MonitorDetailPage({
 
   const { data: monitor, isLoading: monitorLoading, error: monitorError } = useMonitor(monitorId);
   const { data: results = [], isLoading: resultsLoading } = useMonitorResults(monitorId);
+  const { data: uptime, isLoading: uptimeLoading } = useMonitorUptime(monitorId);
   const checkHealth = useCheckHealth();
 
   const getStatus = (): "healthy" | "error" | "unknown" => {
@@ -172,6 +174,15 @@ export default function MonitorDetailPage({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: 0.1 }}
+        className="mb-6"
+      >
+        <UptimeStats uptime={uptime} isLoading={uptimeLoading} />
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.2 }}
       >
         <Card>
           <CardHeader>

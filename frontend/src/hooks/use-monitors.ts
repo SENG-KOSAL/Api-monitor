@@ -38,6 +38,14 @@ export function useMonitorLastCheck(id: number) {
   });
 }
 
+export function useMonitorUptime(id: number) {
+  return useQuery({
+    queryKey: ["monitors", id, "uptime"],
+    queryFn: () => monitorsAPI.getUptime(id),
+    enabled: !!id,
+  });
+}
+
 export function useCreateMonitor() {
   const queryClient = useQueryClient();
 
@@ -83,6 +91,7 @@ export function useCheckHealth() {
       queryClient.invalidateQueries({ queryKey: ["monitors", id] });
       queryClient.invalidateQueries({ queryKey: ["monitors", id, "results"] });
       queryClient.invalidateQueries({ queryKey: ["monitors", id, "lastCheck"] });
+      queryClient.invalidateQueries({ queryKey: ["monitors", id, "uptime"] });
     },
   });
 }

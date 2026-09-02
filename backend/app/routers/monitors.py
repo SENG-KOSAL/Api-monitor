@@ -8,7 +8,8 @@ from app.model.monitor import Monitor
 from app.model.check_result import CheckResult
 from app.schemas.monitor import MonitorCreate, MonitorUpdate, MonitorResponse
 from app.schemas.check_result import CheckResultResponse
-from app.services import check_health
+from app.schemas.uptime import MonitorUptime
+from app.services import check_health, calculate_uptime
 from app.services.scheduler import scheduler
 
 
@@ -162,6 +163,20 @@ def get_monitor_results(
         .all()
     )
     return results
+
+
+@router.get("/{monitor_id}/uptime", response_model=MonitorUptime)
+def get_monitor_uptime(monitor_id: int, db: Session = Depends(get_db)):
+    """
+    Calculate uptime percentage for a monitor over the last 24h, 7d, and 30d.
+    A check counts as "up" only when it has no error and its status code
+    falls within the 2xx or 3xx range.
+    """
+    monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
+    if monitor is None:
+        raise HTTPException(status_code=404, detail="Monitor not found")
+
+    return calculate_uptime(db, monitor_id)
 
 
 @router.delete("/{monitor_id}", status_code=status.HTTP_204_NO_CONTENT)

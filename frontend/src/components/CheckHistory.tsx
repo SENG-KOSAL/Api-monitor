@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { CheckResult } from "@/types";
 import {
   Table,
@@ -10,14 +11,31 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface CheckHistoryProps {
   results: CheckResult[];
   isLoading?: boolean;
 }
 
+const PAGE_SIZE = 5;
+
 export default function CheckHistory({ results, isLoading }: CheckHistoryProps) {
+  const [page, setPage] = useState(1);
+
+  const totalPages = Math.max(1, Math.ceil(results.length / PAGE_SIZE));
+
+  // Keep the current page in range if the results list shrinks/changes.
+  useEffect(() => {
+    setPage((prev) => Math.min(prev, totalPages));
+  }, [totalPages]);
+
+  const paginatedResults = results.slice(
+    (page - 1) * PAGE_SIZE,
+    page * PAGE_SIZE
+  );
+
   const formatDate = (dateString: string) => {
     const formatted = new Date(dateString).toLocaleString("en-US", {
       timeZone: "Asia/Phnom_Penh",
@@ -67,31 +85,63 @@ export default function CheckHistory({ results, isLoading }: CheckHistoryProps) 
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Time</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Response Time</TableHead>
-          <TableHead>Details</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {results.map((result) => (
-          <TableRow key={result.id}>
-            <TableCell className="font-mono text-xs">
-              {formatDate(result.checked_at)}
-            </TableCell>
-            <TableCell>{getStatusBadge(result)}</TableCell>
-            <TableCell className="font-medium">
-              {result.response_time.toFixed(0)}ms
-            </TableCell>
-            <TableCell className="max-w-xs truncate text-muted-foreground">
-              {result.error || ""}
-            </TableCell>
+    <div className="space-y-4">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Time</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Response Time</TableHead>
+            <TableHead>Details</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {paginatedResults.map((result) => (
+            <TableRow key={result.id}>
+              <TableCell className="font-mono text-xs">
+                {formatDate(result.checked_at)}
+              </TableCell>
+              <TableCell>{getStatusBadge(result)}</TableCell>
+              <TableCell className="font-medium">
+                {result.response_time.toFixed(0)}ms
+              </TableCell>
+              <TableCell className="max-w-xs truncate text-muted-foreground">
+                {result.error || ""}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Page {page} of {totalPages}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="gap-1"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="gap-1"
+            >
+              Next
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

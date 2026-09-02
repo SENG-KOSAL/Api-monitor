@@ -19,7 +19,12 @@ interface CheckHistoryProps {
 
 export default function CheckHistory({ results, isLoading }: CheckHistoryProps) {
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
+    const formatted = new Date(dateString).toLocaleString("en-US", {
+      timeZone: "Asia/Phnom_Penh",
+      dateStyle: "short",
+      timeStyle: "medium",
+    });
+    return `${formatted} ICT`;
   };
 
   const getStatusBadge = (result: CheckResult) => {

@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
@@ -39,7 +39,7 @@ def _check_monitor_job(monitor_id: int) -> None:
             error=result["error"],
             headers=result.get("headers"),
             body=result.get("body"),
-            checked_at=datetime.utcnow(),
+            checked_at=datetime.now(timezone.utc),
         )
         db.add(check_result)
         db.commit()

@@ -121,7 +121,12 @@ export default function MonitorDetailPage({
                 <div>
                   <p className="text-sm text-muted-foreground">Created</p>
                   <p className="font-medium">
-                    {new Date(monitor.created_at).toLocaleDateString()}
+                    {new Date(monitor.created_at).toLocaleString("en-US", {
+                      timeZone: "Asia/Phnom_Penh",
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}{" "}
+                    <span className="text-xs text-muted-foreground">ICT</span>
                   </p>
                 </div>
               </div>

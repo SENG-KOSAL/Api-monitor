@@ -14,18 +14,18 @@ def _truncate_body(text: Optional[str]) -> Optional[str]:
     return text
 
 
-def check_health(url: str, timeout: float = 10.0) -> Dict[str, Any]:
+async def check_health_async(url: str, timeout: float = 10.0) -> Dict[str, Any]:
     """
-    Perform a health check on the given URL.
-    
+    Perform an async health check on the given URL.
+
     Args:
         url: The URL to check
         timeout: Request timeout in seconds (default: 10.0)
-        
+
     Returns:
         A dictionary with the following keys:
         - status_code: HTTP status code or None if request failed
-        - reason_phrase: HTTP reason phrase (e.g. "Unauthorized") or None
+        - reason_phrase: HTTP reason phrase or None
         - response_time: Response time in seconds
         - error: Error message if request failed, None otherwise
         - headers: Response headers as a dict, or None if request failed
@@ -33,16 +33,17 @@ def check_health(url: str, timeout: float = 10.0) -> Dict[str, Any]:
     """
     start_time = time.time()
     try:
-        response = httpx.get(url, timeout=timeout)
-        response_time = time.time() - start_time
-        return {
-            "status_code": response.status_code,
-            "reason_phrase": response.reason_phrase,
-            "response_time": response_time,
-            "error": None,
-            "headers": dict(response.headers),
-            "body": _truncate_body(response.text),
-        }
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.get(url)
+            response_time = time.time() - start_time
+            return {
+                "status_code": response.status_code,
+                "reason_phrase": response.reason_phrase,
+                "response_time": response_time,
+                "error": None,
+                "headers": dict(response.headers),
+                "body": _truncate_body(response.text),
+            }
     except httpx.TimeoutException:
         response_time = time.time() - start_time
         return {
@@ -73,12 +74,3 @@ def check_health(url: str, timeout: float = 10.0) -> Dict[str, Any]:
             "headers": None,
             "body": None,
         }
-
-
-# Optional: A class-based service for more complex scenarios
-class HealthCheckerService:
-    def __init__(self, timeout: float = 10.0):
-        self.timeout = timeout
-    
-    def check(self, url: str) -> Dict[str, Any]:
-        return check_health(url, self.timeout)

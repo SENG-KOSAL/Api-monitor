@@ -8,7 +8,9 @@ from app.model.monitor import Monitor
 from app.model.check_result import CheckResult
 from app.schemas.monitor import MonitorCreate, MonitorUpdate, MonitorResponse
 from app.schemas.check_result import CheckResultResponse
-from app.services import check_health
+from app.schemas.uptime import MonitorUptime
+from app.services import check_health, calculate_uptime
+from app.services.scheduler import scheduler
 
 
 router = APIRouter(
@@ -68,6 +70,9 @@ def create_monitor(monitor: MonitorCreate, db: Session = Depends(get_db)):
     db.add(db_monitor)
     db.commit()
     db.refresh(db_monitor)
+
+    scheduler.add_monitor(db_monitor)
+
     return db_monitor
 
 
@@ -99,6 +104,9 @@ def update_monitor(monitor_id: int, monitor: MonitorUpdate, db: Session = Depend
     
     db.commit()
     db.refresh(db_monitor)
+
+    scheduler.update_monitor(db_monitor)
+
     return db_monitor
 
 
@@ -118,14 +126,57 @@ def check_monitor_health(monitor_id: int, db: Session = Depends(get_db)):
     check_result = CheckResult(
         monitor_id=monitor.id,
         status_code=result["status_code"],
+        reason_phrase=result.get("reason_phrase"),
         response_time=result["response_time"],
         error=result["error"],
+        headers=result.get("headers"),
+        body=result.get("body"),
     )
     db.add(check_result)
     db.commit()
     db.refresh(check_result)
 
     return check_result
+
+
+@router.get("/{monitor_id}/results", response_model=List[CheckResultResponse])
+def get_monitor_results(
+    monitor_id: int,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+):
+    """
+    Retrieve health check history for a specific monitor.
+    Results are ordered by most recent first, bounded by limit.
+    """
+    monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
+    if monitor is None:
+        raise HTTPException(status_code=404, detail="Monitor not found")
+
+    results = (
+        db.query(CheckResult)
+        .filter(CheckResult.monitor_id == monitor_id)
+        .order_by(CheckResult.checked_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    return results
+
+
+@router.get("/{monitor_id}/uptime", response_model=MonitorUptime)
+def get_monitor_uptime(monitor_id: int, db: Session = Depends(get_db)):
+    """
+    Calculate uptime percentage for a monitor over the last 24h, 7d, and 30d.
+    A check counts as "up" only when it has no error and its status code
+    falls within the 2xx or 3xx range.
+    """
+    monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
+    if monitor is None:
+        raise HTTPException(status_code=404, detail="Monitor not found")
+
+    return calculate_uptime(db, monitor_id)
 
 
 @router.delete("/{monitor_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -136,7 +187,9 @@ def delete_monitor(monitor_id: int, db: Session = Depends(get_db)):
     db_monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
     if db_monitor is None:
         raise HTTPException(status_code=404, detail="Monitor not found")
-    
+
+    scheduler.remove_monitor(monitor_id)
+
     db.delete(db_monitor)
     db.commit()
     return None

@@ -30,7 +30,12 @@ def _check_monitor_job(monitor_id: int) -> None:
             logger.info("Monitor %s is inactive, skipping check", monitor_id)
             return
 
-        headers = build_auth_headers(monitor.auth_type, monitor.auth_token)
+        headers = build_auth_headers(
+            monitor.auth_type,
+            monitor.auth_token,
+            monitor.auth_username,
+            monitor.auth_password,
+        )
         result = asyncio.run(check_health_async(monitor.url, headers=headers))
 
         check_result = CheckResult(

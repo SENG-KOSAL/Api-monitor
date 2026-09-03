@@ -23,6 +23,7 @@ export default function MonitorForm({ monitor, mode }: MonitorFormProps) {
   const updateMonitor = useUpdateMonitor();
 
   const [showToken, setShowToken] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState(() => {
     if (monitor && mode === "edit") {
       return {
@@ -30,8 +31,10 @@ export default function MonitorForm({ monitor, mode }: MonitorFormProps) {
         url: monitor.url,
         interval_seconds: monitor.interval_seconds,
         is_active: monitor.is_active,
-        auth_type: (monitor.auth_type || "none") as "none" | "bearer",
+        auth_type: (monitor.auth_type || "none") as "none" | "bearer" | "basic",
         auth_token: monitor.auth_token || "",
+        auth_username: monitor.auth_username || "",
+        auth_password: monitor.auth_password || "",
       };
     }
     return {
@@ -39,10 +42,25 @@ export default function MonitorForm({ monitor, mode }: MonitorFormProps) {
       url: "",
       interval_seconds: 300,
       is_active: true,
-      auth_type: "none" as "none" | "bearer",
+      auth_type: "none" as "none" | "bearer" | "basic",
       auth_token: "",
+      auth_username: "",
+      auth_password: "",
     };
   });
+
+  const getBasicAuthPreview = () => {
+    if (!formData.auth_username && !formData.auth_password) {
+      return "<credentials>";
+    }
+    try {
+      const raw = `${formData.auth_username || ""}:${formData.auth_password || ""}`;
+      const encoded = btoa(unescape(encodeURIComponent(raw)));
+      return showPassword ? encoded : "•".repeat(Math.min(encoded.length, 24));
+    } catch {
+      return "<credentials>";
+    }
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -71,6 +89,8 @@ export default function MonitorForm({ monitor, mode }: MonitorFormProps) {
           is_active: formData.is_active,
           auth_type: formData.auth_type,
           auth_token: formData.auth_type === "bearer" ? formData.auth_token : undefined,
+          auth_username: formData.auth_type === "basic" ? formData.auth_username : undefined,
+          auth_password: formData.auth_type === "basic" ? formData.auth_password : undefined,
         };
         await createMonitor.mutateAsync(data);
         router.push("/");
@@ -82,6 +102,8 @@ export default function MonitorForm({ monitor, mode }: MonitorFormProps) {
           is_active: formData.is_active,
           auth_type: formData.auth_type,
           auth_token: formData.auth_type === "bearer" ? formData.auth_token : null,
+          auth_username: formData.auth_type === "basic" ? formData.auth_username : null,
+          auth_password: formData.auth_type === "basic" ? formData.auth_password : null,
         };
         await updateMonitor.mutateAsync({ id: monitor.id, data });
         router.push(`/monitors/${monitor.id}`);
@@ -169,6 +191,7 @@ export default function MonitorForm({ monitor, mode }: MonitorFormProps) {
           >
             <option value="none">None</option>
             <option value="bearer">Bearer Token</option>
+            <option value="basic">Basic Auth</option>
           </Select>
         </div>
 
@@ -203,7 +226,58 @@ export default function MonitorForm({ monitor, mode }: MonitorFormProps) {
             <div className="rounded-md border border-border bg-muted/60 p-3 text-xs space-y-1">
               <p className="font-semibold text-muted-foreground">Monitor sends:</p>
               <p className="font-mono text-foreground break-all">
-                Authorization: Bearer {formData.auth_token ? (showToken ? formData.auth_token : "•".repeat(Math.min(formData.auth_token.length, 24))) : "&lt;token&gt;"}
+                Authorization: Bearer {formData.auth_token ? (showToken ? formData.auth_token : "•".repeat(Math.min(formData.auth_token.length, 24))) : "<token>"}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {formData.auth_type === "basic" && (
+          <div className="space-y-3 pt-1">
+            <div className="space-y-2">
+              <Label htmlFor="auth_username">Username *</Label>
+              <Input
+                type="text"
+                id="auth_username"
+                name="auth_username"
+                value={formData.auth_username}
+                onChange={handleChange}
+                required={formData.auth_type === "basic"}
+                placeholder="Enter username"
+                className="font-mono"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="auth_password">Password *</Label>
+              <div className="relative">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  id="auth_password"
+                  name="auth_password"
+                  value={formData.auth_password}
+                  onChange={handleChange}
+                  required={formData.auth_type === "basic"}
+                  placeholder="Enter password"
+                  className="pr-12 font-mono"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-8 p-0 text-muted-foreground hover:text-foreground"
+                  title={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+
+            <div className="rounded-md border border-border bg-muted/60 p-3 text-xs space-y-1">
+              <p className="font-semibold text-muted-foreground">Monitor sends:</p>
+              <p className="font-mono text-foreground break-all">
+                Authorization: Basic {getBasicAuthPreview()}
               </p>
             </div>
           </div>

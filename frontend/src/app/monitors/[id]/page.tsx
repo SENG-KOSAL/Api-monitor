@@ -123,7 +123,11 @@ export default function MonitorDetailPage({
                 <div>
                   <p className="text-sm text-muted-foreground">Auth</p>
                   <p className="font-medium">
-                    {monitor.auth_type === "bearer" ? "Bearer Token" : "None (Public)"}
+                    {monitor.auth_type === "bearer"
+                      ? "Bearer Token"
+                      : monitor.auth_type === "basic"
+                      ? "Basic Auth"
+                      : "None (Public)"}
                   </p>
                 </div>
               </div>

@@ -1,3 +1,4 @@
+import base64
 import httpx
 import time
 from typing import Dict, Any, Optional
@@ -14,12 +15,27 @@ def _truncate_body(text: Optional[str]) -> Optional[str]:
     return text
 
 
-def build_auth_headers(auth_type: Optional[str] = None, auth_token: Optional[str] = None) -> Dict[str, str]:
+def build_auth_headers(
+    auth_type: Optional[str] = None,
+    auth_token: Optional[str] = None,
+    auth_username: Optional[str] = None,
+    auth_password: Optional[str] = None,
+) -> Dict[str, str]:
     """
     Construct HTTP headers for authentication.
     """
     if auth_type == "bearer" and auth_token and auth_token.strip():
         return {"Authorization": f"Bearer {auth_token.strip()}"}
+    if (
+        auth_type == "basic"
+        and auth_username is not None
+        and auth_password is not None
+        and auth_username.strip()
+        and auth_password.strip()
+    ):
+        credentials = f"{auth_username.strip()}:{auth_password.strip()}"
+        encoded = base64.b64encode(credentials.encode("utf-8")).decode("ascii")
+        return {"Authorization": f"Basic {encoded}"}
     return {}
 
 

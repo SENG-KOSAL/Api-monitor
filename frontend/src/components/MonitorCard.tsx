@@ -76,6 +76,15 @@ export default function MonitorCard({ monitor, lastCheck, onRefresh, index = 0 }
                   Bearer
                 </span>
               )}
+              {monitor.auth_type === "basic" && (
+                <span
+                  className="inline-flex items-center gap-1 rounded bg-secondary/80 px-1.5 py-0.5 text-xs font-medium text-secondary-foreground"
+                  title="Basic Authentication"
+                >
+                  <Key className="h-3 w-3" />
+                  Basic
+                </span>
+              )}
             </div>
             {lastCheck && (
               <span className="font-medium text-foreground">

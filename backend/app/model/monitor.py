@@ -43,6 +43,16 @@ class Monitor(Base):
         nullable=True,
     )
 
+    auth_username: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+
+    auth_password: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         default=True,

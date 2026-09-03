@@ -103,6 +103,8 @@ def update_monitor(monitor_id: int, monitor: MonitorUpdate, db: Session = Depend
     # Handle authentication fields logic
     if update_data.get('auth_type') == 'none':
         update_data['auth_token'] = None
+        update_data['auth_username'] = None
+        update_data['auth_password'] = None
     elif update_data.get('auth_type') == 'bearer':
         token = update_data.get('auth_token', db_monitor.auth_token)
         if not token or not token.strip():
@@ -111,6 +113,47 @@ def update_monitor(monitor_id: int, monitor: MonitorUpdate, db: Session = Depend
                 detail="Bearer token is required when authentication type is 'bearer'"
             )
         update_data['auth_token'] = token.strip()
+        update_data['auth_username'] = None
+        update_data['auth_password'] = None
+    elif update_data.get('auth_type') == 'basic':
+        username = update_data.get('auth_username', db_monitor.auth_username)
+        password = update_data.get('auth_password', db_monitor.auth_password)
+        if not username or not username.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="Username is required when authentication type is 'basic'"
+            )
+        if not password or not password.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="Password is required when authentication type is 'basic'"
+            )
+        update_data['auth_username'] = username.strip()
+        update_data['auth_password'] = password.strip()
+        update_data['auth_token'] = None
+    elif update_data.get('auth_type') is None:
+        if db_monitor.auth_type == 'bearer' and 'auth_token' in update_data:
+            if not update_data['auth_token'] or not update_data['auth_token'].strip():
+                raise HTTPException(
+                    status_code=400,
+                    detail="Bearer token cannot be empty when authentication type is 'bearer'"
+                )
+            update_data['auth_token'] = update_data['auth_token'].strip()
+        elif db_monitor.auth_type == 'basic':
+            if 'auth_username' in update_data:
+                if not update_data['auth_username'] or not update_data['auth_username'].strip():
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Username cannot be empty when authentication type is 'basic'"
+                    )
+                update_data['auth_username'] = update_data['auth_username'].strip()
+            if 'auth_password' in update_data:
+                if not update_data['auth_password'] or not update_data['auth_password'].strip():
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Password cannot be empty when authentication type is 'basic'"
+                    )
+                update_data['auth_password'] = update_data['auth_password'].strip()
 
     for field, value in update_data.items():
         setattr(db_monitor, field, value)
@@ -133,7 +176,12 @@ def check_monitor_health(monitor_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Monitor not found")
     
     # Perform the health check with authentication headers if configured
-    headers = build_auth_headers(monitor.auth_type, monitor.auth_token)
+    headers = build_auth_headers(
+        monitor.auth_type,
+        monitor.auth_token,
+        monitor.auth_username,
+        monitor.auth_password,
+    )
     result = check_health(monitor.url, headers=headers)
 
     # Persist as CheckResult row

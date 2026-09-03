@@ -3,6 +3,8 @@ export interface Monitor {
   name: string;
   url: string;
   interval_seconds: number;
+  auth_type: "none" | "bearer";
+  auth_token?: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -12,6 +14,8 @@ export interface MonitorCreate {
   name: string;
   url: string;
   interval_seconds?: number;
+  auth_type?: "none" | "bearer";
+  auth_token?: string | null;
   is_active?: boolean;
 }
 
@@ -19,6 +23,8 @@ export interface MonitorUpdate {
   name?: string;
   url?: string;
   interval_seconds?: number;
+  auth_type?: "none" | "bearer";
+  auth_token?: string | null;
   is_active?: boolean;
 }
 

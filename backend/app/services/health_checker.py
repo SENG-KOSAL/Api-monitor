@@ -14,13 +14,23 @@ def _truncate_body(text: Optional[str]) -> Optional[str]:
     return text
 
 
-def check_health(url: str, timeout: float = 10.0) -> Dict[str, Any]:
+def build_auth_headers(auth_type: Optional[str] = None, auth_token: Optional[str] = None) -> Dict[str, str]:
+    """
+    Construct HTTP headers for authentication.
+    """
+    if auth_type == "bearer" and auth_token and auth_token.strip():
+        return {"Authorization": f"Bearer {auth_token.strip()}"}
+    return {}
+
+
+def check_health(url: str, timeout: float = 10.0, headers: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
     """
     Perform a health check on the given URL.
     
     Args:
         url: The URL to check
         timeout: Request timeout in seconds (default: 10.0)
+        headers: Optional HTTP headers (e.g. for authentication)
         
     Returns:
         A dictionary with the following keys:
@@ -33,7 +43,7 @@ def check_health(url: str, timeout: float = 10.0) -> Dict[str, Any]:
     """
     start_time = time.time()
     try:
-        response = httpx.get(url, timeout=timeout)
+        response = httpx.get(url, timeout=timeout, headers=headers)
         response_time = time.time() - start_time
         return {
             "status_code": response.status_code,
@@ -80,5 +90,5 @@ class HealthCheckerService:
     def __init__(self, timeout: float = 10.0):
         self.timeout = timeout
     
-    def check(self, url: str) -> Dict[str, Any]:
-        return check_health(url, self.timeout)
+    def check(self, url: str, headers: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+        return check_health(url, self.timeout, headers=headers)

@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, Eye, EyeOff } from "lucide-react";
 
 interface MonitorFormProps {
   monitor?: Monitor;
@@ -22,6 +22,7 @@ export default function MonitorForm({ monitor, mode }: MonitorFormProps) {
   const createMonitor = useCreateMonitor();
   const updateMonitor = useUpdateMonitor();
 
+  const [showToken, setShowToken] = useState(false);
   const [formData, setFormData] = useState(() => {
     if (monitor && mode === "edit") {
       return {
@@ -29,6 +30,8 @@ export default function MonitorForm({ monitor, mode }: MonitorFormProps) {
         url: monitor.url,
         interval_seconds: monitor.interval_seconds,
         is_active: monitor.is_active,
+        auth_type: (monitor.auth_type || "none") as "none" | "bearer",
+        auth_token: monitor.auth_token || "",
       };
     }
     return {
@@ -36,6 +39,8 @@ export default function MonitorForm({ monitor, mode }: MonitorFormProps) {
       url: "",
       interval_seconds: 300,
       is_active: true,
+      auth_type: "none" as "none" | "bearer",
+      auth_token: "",
     };
   });
 
@@ -64,6 +69,8 @@ export default function MonitorForm({ monitor, mode }: MonitorFormProps) {
           url: formData.url,
           interval_seconds: formData.interval_seconds,
           is_active: formData.is_active,
+          auth_type: formData.auth_type,
+          auth_token: formData.auth_type === "bearer" ? formData.auth_token : undefined,
         };
         await createMonitor.mutateAsync(data);
         router.push("/");
@@ -73,6 +80,8 @@ export default function MonitorForm({ monitor, mode }: MonitorFormProps) {
           url: formData.url,
           interval_seconds: formData.interval_seconds,
           is_active: formData.is_active,
+          auth_type: formData.auth_type,
+          auth_token: formData.auth_type === "bearer" ? formData.auth_token : null,
         };
         await updateMonitor.mutateAsync({ id: monitor.id, data });
         router.push(`/monitors/${monitor.id}`);
@@ -147,6 +156,58 @@ export default function MonitorForm({ monitor, mode }: MonitorFormProps) {
             </option>
           ))}
         </Select>
+      </div>
+
+      <div className="space-y-4 rounded-lg border p-4 bg-card/60">
+        <div className="space-y-2">
+          <Label htmlFor="auth_type">Authentication</Label>
+          <Select
+            id="auth_type"
+            name="auth_type"
+            value={formData.auth_type}
+            onChange={handleChange}
+          >
+            <option value="none">None</option>
+            <option value="bearer">Bearer Token</option>
+          </Select>
+        </div>
+
+        {formData.auth_type === "bearer" && (
+          <div className="space-y-3 pt-1">
+            <div className="space-y-2">
+              <Label htmlFor="auth_token">Token *</Label>
+              <div className="relative">
+                <Input
+                  type={showToken ? "text" : "password"}
+                  id="auth_token"
+                  name="auth_token"
+                  value={formData.auth_token}
+                  onChange={handleChange}
+                  required={formData.auth_type === "bearer"}
+                  placeholder="Enter token"
+                  className="pr-12 font-mono"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowToken(!showToken)}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-8 p-0 text-muted-foreground hover:text-foreground"
+                  title={showToken ? "Hide token" : "Show token"}
+                >
+                  {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+
+            <div className="rounded-md border border-border bg-muted/60 p-3 text-xs space-y-1">
+              <p className="font-semibold text-muted-foreground">Monitor sends:</p>
+              <p className="font-mono text-foreground break-all">
+                Authorization: Bearer {formData.auth_token ? (showToken ? formData.auth_token : "•".repeat(Math.min(formData.auth_token.length, 24))) : "&lt;token&gt;"}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       <Card>

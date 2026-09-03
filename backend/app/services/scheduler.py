@@ -8,6 +8,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from app.database.connection import SessionLocal
 from app.model.monitor import Monitor
 from app.model.check_result import CheckResult
+from app.services.health_checker import build_auth_headers
 from app.services.health_checker_async import check_health_async
 
 logger = logging.getLogger(__name__)
@@ -29,7 +30,8 @@ def _check_monitor_job(monitor_id: int) -> None:
             logger.info("Monitor %s is inactive, skipping check", monitor_id)
             return
 
-        result = asyncio.run(check_health_async(monitor.url))
+        headers = build_auth_headers(monitor.auth_type, monitor.auth_token)
+        result = asyncio.run(check_health_async(monitor.url, headers=headers))
 
         check_result = CheckResult(
             monitor_id=monitor.id,

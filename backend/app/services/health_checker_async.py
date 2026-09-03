@@ -14,13 +14,14 @@ def _truncate_body(text: Optional[str]) -> Optional[str]:
     return text
 
 
-async def check_health_async(url: str, timeout: float = 10.0) -> Dict[str, Any]:
+async def check_health_async(url: str, timeout: float = 10.0, headers: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
     """
     Perform an async health check on the given URL.
 
     Args:
         url: The URL to check
         timeout: Request timeout in seconds (default: 10.0)
+        headers: Optional HTTP headers (e.g. for authentication)
 
     Returns:
         A dictionary with the following keys:
@@ -34,7 +35,7 @@ async def check_health_async(url: str, timeout: float = 10.0) -> Dict[str, Any]:
     start_time = time.time()
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
-            response = await client.get(url)
+            response = await client.get(url, headers=headers)
             response_time = time.time() - start_time
             return {
                 "status_code": response.status_code,

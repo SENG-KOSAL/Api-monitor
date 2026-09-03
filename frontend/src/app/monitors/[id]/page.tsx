@@ -11,7 +11,7 @@ import DeleteButton from "@/components/DeleteButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, ArrowLeft, Pencil, Activity, Clock, Calendar, Zap, AlertCircle } from "lucide-react";
+import { Loader2, ArrowLeft, Pencil, Activity, Clock, Calendar, Zap, AlertCircle, Key } from "lucide-react";
 
 export default function MonitorDetailPage({
   params,
@@ -103,7 +103,7 @@ export default function MonitorDetailPage({
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 py-4 border-t border-b">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6 py-4 border-t border-b">
               <div className="flex items-start gap-2">
                 <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
                 <div>
@@ -116,6 +116,15 @@ export default function MonitorDetailPage({
                 <div>
                   <p className="text-sm text-muted-foreground">Status</p>
                   <p className="font-medium">{monitor.is_active ? "Active" : "Paused"}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <Key className="h-4 w-4 text-muted-foreground mt-0.5" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Auth</p>
+                  <p className="font-medium">
+                    {monitor.auth_type === "bearer" ? "Bearer Token" : "None (Public)"}
+                  </p>
                 </div>
               </div>
               <div className="flex items-start gap-2">

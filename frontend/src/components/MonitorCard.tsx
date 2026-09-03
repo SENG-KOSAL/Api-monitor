@@ -7,7 +7,7 @@ import StatusBadge from "./StatusBadge";
 import DeleteButton from "./DeleteButton";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Clock, ExternalLink, Pencil } from "lucide-react";
+import { Clock, ExternalLink, Pencil, Key } from "lucide-react";
 
 interface MonitorCardProps {
   monitor: Monitor;
@@ -62,10 +62,21 @@ export default function MonitorCard({ monitor, lastCheck, onRefresh, index = 0 }
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span className="flex items-center gap-1.5">
-              <Clock className="h-4 w-4" />
-              Every {formatInterval(monitor.interval_seconds)}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5">
+                <Clock className="h-4 w-4" />
+                Every {formatInterval(monitor.interval_seconds)}
+              </span>
+              {monitor.auth_type === "bearer" && (
+                <span
+                  className="inline-flex items-center gap-1 rounded bg-secondary/80 px-1.5 py-0.5 text-xs font-medium text-secondary-foreground"
+                  title="Bearer Token Authentication"
+                >
+                  <Key className="h-3 w-3" />
+                  Bearer
+                </span>
+              )}
+            </div>
             {lastCheck && (
               <span className="font-medium text-foreground">
                 {lastCheck.response_time.toFixed(0)}ms

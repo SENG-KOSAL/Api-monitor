@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
-from typing import List
+from typing import List, Optional
 
-from sqlalchemy import Boolean, DateTime, Integer, String
+from sqlalchemy import Boolean, DateTime, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.connection import Base
@@ -30,6 +30,17 @@ class Monitor(Base):
         Integer,
         default=300,
         nullable=False,
+    )
+
+    auth_type: Mapped[str] = mapped_column(
+        String(50),
+        default="none",
+        nullable=False,
+    )
+
+    auth_token: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
     )
 
     is_active: Mapped[bool] = mapped_column(

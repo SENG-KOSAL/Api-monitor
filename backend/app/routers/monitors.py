@@ -9,7 +9,7 @@ from app.model.check_result import CheckResult
 from app.schemas.monitor import MonitorCreate, MonitorUpdate, MonitorResponse
 from app.schemas.check_result import CheckResultResponse
 from app.schemas.uptime import MonitorUptime
-from app.services import check_health, calculate_uptime
+from app.services import check_health, calculate_uptime, build_auth_headers
 from app.services.scheduler import scheduler
 
 
@@ -99,6 +99,19 @@ def update_monitor(monitor_id: int, monitor: MonitorUpdate, db: Session = Depend
     # Convert HttpUrl to string for SQLAlchemy
     if 'url' in update_data and isinstance(update_data['url'], HttpUrl):
         update_data['url'] = str(update_data['url'])
+    
+    # Handle authentication fields logic
+    if update_data.get('auth_type') == 'none':
+        update_data['auth_token'] = None
+    elif update_data.get('auth_type') == 'bearer':
+        token = update_data.get('auth_token', db_monitor.auth_token)
+        if not token or not token.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="Bearer token is required when authentication type is 'bearer'"
+            )
+        update_data['auth_token'] = token.strip()
+
     for field, value in update_data.items():
         setattr(db_monitor, field, value)
     
@@ -119,8 +132,9 @@ def check_monitor_health(monitor_id: int, db: Session = Depends(get_db)):
     if monitor is None:
         raise HTTPException(status_code=404, detail="Monitor not found")
     
-    # Perform the health check
-    result = check_health(monitor.url)
+    # Perform the health check with authentication headers if configured
+    headers = build_auth_headers(monitor.auth_type, monitor.auth_token)
+    result = check_health(monitor.url, headers=headers)
 
     # Persist as CheckResult row
     check_result = CheckResult(

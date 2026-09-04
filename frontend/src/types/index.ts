@@ -64,3 +64,16 @@ export interface MonitorUptime {
   week: UptimeStats;
   month: UptimeStats;
 }
+
+export interface Incident {
+  id: number;
+  monitor_id: number;
+  status: "open" | "resolved";
+  started_at: string;
+  resolved_at: string | null;
+  reason: string;
+  duration_seconds: number | null;
+  first_check_result_id: number | null;
+  last_check_result_id: number | null;
+  created_at: string;
+}

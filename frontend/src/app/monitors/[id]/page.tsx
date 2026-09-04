@@ -3,15 +3,17 @@
 import { use } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { useMonitor, useMonitorResults, useMonitorUptime, useCheckHealth } from "@/hooks/use-monitors";
+import { useMonitor, useMonitorResults, useMonitorUptime, useMonitorActiveIncidents, useMonitorIncidents, useCheckHealth } from "@/hooks/use-monitors";
 import StatusBadge from "@/components/StatusBadge";
 import CheckHistory from "@/components/CheckHistory";
 import UptimeStats from "@/components/UptimeStats";
+import IncidentHistory from "@/components/IncidentHistory";
 import DeleteButton from "@/components/DeleteButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, ArrowLeft, Pencil, Activity, Clock, Calendar, Zap, AlertCircle, Key } from "lucide-react";
+import { Loader2, ArrowLeft, Pencil, Activity, Clock, Calendar, Zap, AlertCircle, Key, ShieldAlert } from "lucide-react";
 
 export default function MonitorDetailPage({
   params,
@@ -25,6 +27,8 @@ export default function MonitorDetailPage({
   const { data: monitor, isLoading: monitorLoading, error: monitorError } = useMonitor(monitorId);
   const { data: results = [], isLoading: resultsLoading } = useMonitorResults(monitorId);
   const { data: uptime, isLoading: uptimeLoading } = useMonitorUptime(monitorId);
+  const { data: activeIncidents = [], isLoading: activeIncidentsLoading } = useMonitorActiveIncidents(monitorId);
+  const { data: incidents = [], isLoading: incidentsLoading } = useMonitorIncidents(monitorId);
   const checkHealth = useCheckHealth();
 
   const getStatus = (): "healthy" | "error" | "unknown" => {
@@ -183,6 +187,49 @@ export default function MonitorDetailPage({
         </Card>
       </motion.div>
 
+      {activeIncidents.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.05 }}
+          className="mb-6"
+        >
+          <Card className="border-red-200 bg-red-50/50">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2">
+                <ShieldAlert className="h-5 w-5 text-red-600" />
+                <CardTitle className="text-red-800">
+                  Active Incident{activeIncidents.length > 1 ? "s" : ""}
+                </CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {activeIncidents.map((incident) => (
+                <div key={incident.id} className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="font-medium text-red-800">{incident.reason}</p>
+                    <p className="text-sm text-red-600">
+                      Since {new Date(incident.started_at).toLocaleString("en-US", {
+                        timeZone: "Asia/Phnom_Penh",
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })} ICT
+                    </p>
+                  </div>
+                  <Badge variant="destructive" className="shrink-0 gap-1">
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75 animate-pulse-ring" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+                    </span>
+                    Ongoing
+                  </Badge>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -190,6 +237,22 @@ export default function MonitorDetailPage({
         className="mb-6"
       >
         <UptimeStats uptime={uptime} isLoading={uptimeLoading} />
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.15 }}
+        className="mb-6"
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle>Incidents</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <IncidentHistory incidents={incidents} isLoading={incidentsLoading} />
+          </CardContent>
+        </Card>
       </motion.div>
 
       <motion.div

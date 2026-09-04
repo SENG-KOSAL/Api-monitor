@@ -12,6 +12,7 @@ class MonitorBase(BaseModel):
     auth_token: Optional[str] = Field(None, description="Bearer token value if auth_type is 'bearer'")
     auth_username: Optional[str] = Field(None, description="Username if auth_type is 'basic'")
     auth_password: Optional[str] = Field(None, description="Password if auth_type is 'basic'")
+    failure_threshold: int = Field(1, ge=1, le=100, description="Number of consecutive failing checks before opening an incident")
 
     @model_validator(mode="after")
     def validate_auth(self):
@@ -49,6 +50,7 @@ class MonitorUpdate(BaseModel):
     auth_token: Optional[str] = None
     auth_username: Optional[str] = None
     auth_password: Optional[str] = None
+    failure_threshold: Optional[int] = Field(None, ge=1, le=100)
 
     @model_validator(mode="after")
     def validate_auth(self):

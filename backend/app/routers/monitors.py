@@ -6,10 +6,13 @@ from pydantic import HttpUrl
 from app.database.connection import SessionLocal
 from app.model.monitor import Monitor
 from app.model.check_result import CheckResult
+from app.model.incident import Incident
 from app.schemas.monitor import MonitorCreate, MonitorUpdate, MonitorResponse
 from app.schemas.check_result import CheckResultResponse
+from app.schemas.incident import IncidentResponse
 from app.schemas.uptime import MonitorUptime
 from app.services import check_health, calculate_uptime, build_auth_headers
+from app.services.detect_incidents import detect_incident
 from app.services.scheduler import scheduler
 
 
@@ -198,6 +201,9 @@ def check_monitor_health(monitor_id: int, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(check_result)
 
+    detect_incident(db, monitor, check_result)
+    db.commit()
+
     return check_result
 
 
@@ -239,6 +245,49 @@ def get_monitor_uptime(monitor_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Monitor not found")
 
     return calculate_uptime(db, monitor_id)
+
+
+@router.get("/{monitor_id}/incidents/active", response_model=List[IncidentResponse])
+def get_active_incidents(monitor_id: int, db: Session = Depends(get_db)):
+    """
+    Retrieve currently open incidents for a monitor (live dashboard card).
+    """
+    monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
+    if monitor is None:
+        raise HTTPException(status_code=404, detail="Monitor not found")
+
+    incidents = (
+        db.query(Incident)
+        .filter(Incident.monitor_id == monitor_id, Incident.status == "open")
+        .order_by(Incident.started_at.desc())
+        .all()
+    )
+    return incidents
+
+
+@router.get("/{monitor_id}/incidents", response_model=List[IncidentResponse])
+def get_incidents(
+    monitor_id: int,
+    skip: int = 0,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+):
+    """
+    Retrieve incident history for a monitor, ordered by most recent first.
+    """
+    monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
+    if monitor is None:
+        raise HTTPException(status_code=404, detail="Monitor not found")
+
+    incidents = (
+        db.query(Incident)
+        .filter(Incident.monitor_id == monitor_id)
+        .order_by(Incident.started_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    return incidents
 
 
 @router.delete("/{monitor_id}", status_code=status.HTTP_204_NO_CONTENT)

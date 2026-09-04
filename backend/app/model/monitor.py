@@ -59,6 +59,23 @@ class Monitor(Base):
         nullable=False,
     )
 
+    failure_threshold: Mapped[int] = mapped_column(
+        Integer,
+        default=1,
+        nullable=False,
+    )
+
+    consecutive_failures: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+
+    failure_streak_started_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -74,6 +91,12 @@ class Monitor(Base):
 
     check_results: Mapped[List["CheckResult"]] = relationship(
         "CheckResult",
+        cascade="all, delete-orphan",
+        back_populates="monitor",
+    )
+
+    incidents: Mapped[List["Incident"]] = relationship(
+        "Incident",
         cascade="all, delete-orphan",
         back_populates="monitor",
     )

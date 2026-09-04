@@ -8,6 +8,9 @@ import StatusBadge from "@/components/StatusBadge";
 import CheckHistory from "@/components/CheckHistory";
 import UptimeStats from "@/components/UptimeStats";
 import IncidentHistory from "@/components/IncidentHistory";
+import ResponseTimeChart from "@/components/ResponseTimeChart";
+import StatusDistributionChart from "@/components/StatusDistributionChart";
+import UptimeTimeline from "@/components/UptimeTimeline";
 import DeleteButton from "@/components/DeleteButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -237,6 +240,48 @@ export default function MonitorDetailPage({
         className="mb-6"
       >
         <UptimeStats uptime={uptime} isLoading={uptimeLoading} />
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.12 }}
+        className="mb-6"
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle>Response Time</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponseTimeChart results={results} />
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.14 }}
+        className="mb-6"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Status Distribution</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <StatusDistributionChart results={results} />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Uptime Timeline</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <UptimeTimeline results={results} incidents={incidents} />
+            </CardContent>
+          </Card>
+        </div>
       </motion.div>
 
       <motion.div

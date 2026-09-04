@@ -10,6 +10,16 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 import { Loader2, AlertCircle, Eye, EyeOff } from "lucide-react";
 
 interface MonitorFormProps {
@@ -24,6 +34,7 @@ export default function MonitorForm({ monitor, mode }: MonitorFormProps) {
 
   const [showToken, setShowToken] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [formData, setFormData] = useState(() => {
     if (monitor && mode === "edit") {
       return {
@@ -79,6 +90,11 @@ export default function MonitorForm({ monitor, mode }: MonitorFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirm = async () => {
+    setShowConfirmDialog(false);
 
     try {
       if (mode === "create") {
@@ -129,192 +145,269 @@ export default function MonitorForm({ monitor, mode }: MonitorFormProps) {
   const isSubmitting = createMonitor.isPending || updateMonitor.isPending;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+    <>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-      <div className="space-y-2">
-        <Label htmlFor="name">Monitor Name *</Label>
-        <Input
-          id="name"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          required
-          minLength={1}
-          maxLength={255}
-          placeholder="e.g., My API Health Check"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="url">URL to Monitor *</Label>
-        <Input
-          type="url"
-          id="url"
-          name="url"
-          value={formData.url}
-          onChange={handleChange}
-          required
-          placeholder="https://api.example.com/health"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="interval_seconds">Check Interval</Label>
-        <Select
-          id="interval_seconds"
-          name="interval_seconds"
-          value={formData.interval_seconds}
-          onChange={handleChange}
-        >
-          {intervalOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </Select>
-      </div>
-
-      <div className="space-y-4 rounded-lg border p-4 bg-card/60">
         <div className="space-y-2">
-          <Label htmlFor="auth_type">Authentication</Label>
+          <Label htmlFor="name">Monitor Name *</Label>
+          <Input
+            id="name"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            required
+            minLength={1}
+            maxLength={255}
+            placeholder="e.g., My API Health Check"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="url">URL to Monitor *</Label>
+          <Input
+            type="url"
+            id="url"
+            name="url"
+            value={formData.url}
+            onChange={handleChange}
+            required
+            placeholder="https://api.example.com/health"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="interval_seconds">Check Interval</Label>
           <Select
-            id="auth_type"
-            name="auth_type"
-            value={formData.auth_type}
+            id="interval_seconds"
+            name="interval_seconds"
+            value={formData.interval_seconds}
             onChange={handleChange}
           >
-            <option value="none">None</option>
-            <option value="bearer">Bearer Token</option>
-            <option value="basic">Basic Auth</option>
+            {intervalOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </Select>
         </div>
 
-        {formData.auth_type === "bearer" && (
-          <div className="space-y-3 pt-1">
-            <div className="space-y-2">
-              <Label htmlFor="auth_token">Token *</Label>
-              <div className="relative">
-                <Input
-                  type={showToken ? "text" : "password"}
-                  id="auth_token"
-                  name="auth_token"
-                  value={formData.auth_token}
-                  onChange={handleChange}
-                  required={formData.auth_type === "bearer"}
-                  placeholder="Enter token"
-                  className="pr-12 font-mono"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowToken(!showToken)}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-8 p-0 text-muted-foreground hover:text-foreground"
-                  title={showToken ? "Hide token" : "Show token"}
-                >
-                  {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Button>
+        <div className="space-y-4 rounded-lg border p-4 bg-card/60">
+          <div className="space-y-2">
+            <Label htmlFor="auth_type">Authentication</Label>
+            <Select
+              id="auth_type"
+              name="auth_type"
+              value={formData.auth_type}
+              onChange={handleChange}
+            >
+              <option value="none">None</option>
+              <option value="bearer">Bearer Token</option>
+              <option value="basic">Basic Auth</option>
+            </Select>
+          </div>
+
+          {formData.auth_type === "bearer" && (
+            <div className="space-y-3 pt-1">
+              <div className="space-y-2">
+                <Label htmlFor="auth_token">Token *</Label>
+                <div className="relative">
+                  <Input
+                    type={showToken ? "text" : "password"}
+                    id="auth_token"
+                    name="auth_token"
+                    value={formData.auth_token}
+                    onChange={handleChange}
+                    required={formData.auth_type === "bearer"}
+                    placeholder="Enter token"
+                    className="pr-12 font-mono"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowToken(!showToken)}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-8 p-0 text-muted-foreground hover:text-foreground"
+                    title={showToken ? "Hide token" : "Show token"}
+                  >
+                    {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="rounded-md border border-border bg-muted/60 p-3 text-xs space-y-1">
+                <p className="font-semibold text-muted-foreground">Monitor sends:</p>
+                <p className="font-mono text-foreground break-all">
+                  Authorization: Bearer {formData.auth_token ? (showToken ? formData.auth_token : "•".repeat(Math.min(formData.auth_token.length, 24))) : "<token>"}
+                </p>
               </div>
             </div>
+          )}
 
-            <div className="rounded-md border border-border bg-muted/60 p-3 text-xs space-y-1">
-              <p className="font-semibold text-muted-foreground">Monitor sends:</p>
-              <p className="font-mono text-foreground break-all">
-                Authorization: Bearer {formData.auth_token ? (showToken ? formData.auth_token : "•".repeat(Math.min(formData.auth_token.length, 24))) : "<token>"}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {formData.auth_type === "basic" && (
-          <div className="space-y-3 pt-1">
-            <div className="space-y-2">
-              <Label htmlFor="auth_username">Username *</Label>
-              <Input
-                type="text"
-                id="auth_username"
-                name="auth_username"
-                value={formData.auth_username}
-                onChange={handleChange}
-                required={formData.auth_type === "basic"}
-                placeholder="Enter username"
-                className="font-mono"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="auth_password">Password *</Label>
-              <div className="relative">
+          {formData.auth_type === "basic" && (
+            <div className="space-y-3 pt-1">
+              <div className="space-y-2">
+                <Label htmlFor="auth_username">Username *</Label>
                 <Input
-                  type={showPassword ? "text" : "password"}
-                  id="auth_password"
-                  name="auth_password"
-                  value={formData.auth_password}
+                  type="text"
+                  id="auth_username"
+                  name="auth_username"
+                  value={formData.auth_username}
                   onChange={handleChange}
                   required={formData.auth_type === "basic"}
-                  placeholder="Enter password"
-                  className="pr-12 font-mono"
+                  placeholder="Enter username"
+                  className="font-mono"
                 />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-8 p-0 text-muted-foreground hover:text-foreground"
-                  title={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Button>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="auth_password">Password *</Label>
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    id="auth_password"
+                    name="auth_password"
+                    value={formData.auth_password}
+                    onChange={handleChange}
+                    required={formData.auth_type === "basic"}
+                    placeholder="Enter password"
+                    className="pr-12 font-mono"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-8 p-0 text-muted-foreground hover:text-foreground"
+                    title={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="rounded-md border border-border bg-muted/60 p-3 text-xs space-y-1">
+                <p className="font-semibold text-muted-foreground">Monitor sends:</p>
+                <p className="font-mono text-foreground break-all">
+                  Authorization: Basic {getBasicAuthPreview()}
+                </p>
               </div>
             </div>
+          )}
+        </div>
 
-            <div className="rounded-md border border-border bg-muted/60 p-3 text-xs space-y-1">
-              <p className="font-semibold text-muted-foreground">Monitor sends:</p>
-              <p className="font-mono text-foreground break-all">
-                Authorization: Basic {getBasicAuthPreview()}
-              </p>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                id="is_active"
+                name="is_active"
+                checked={formData.is_active}
+                onChange={handleChange}
+                className="h-4 w-4 rounded border-input"
+              />
+              <Label htmlFor="is_active" className="cursor-pointer">
+                Active (monitoring enabled)
+              </Label>
             </div>
-          </div>
-        )}
-      </div>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center space-x-3">
-            <input
-              type="checkbox"
-              id="is_active"
-              name="is_active"
-              checked={formData.is_active}
-              onChange={handleChange}
-              className="h-4 w-4 rounded border-input"
-            />
-            <Label htmlFor="is_active" className="cursor-pointer">
-              Active (monitoring enabled)
-            </Label>
-          </div>
-        </CardContent>
-      </Card>
+        <div className="flex items-center gap-4 pt-4">
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isSubmitting
+              ? "Saving..."
+              : mode === "create"
+              ? "Create Monitor"
+              : "Update Monitor"}
+          </Button>
+          <Button type="button" variant="outline" onClick={() => router.back()}>
+            Cancel
+          </Button>
+        </div>
+      </form>
 
-      <div className="flex items-center gap-4 pt-4">
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {isSubmitting
-            ? "Saving..."
-            : mode === "create"
-            ? "Create Monitor"
-            : "Update Monitor"}
-        </Button>
-        <Button type="button" variant="outline" onClick={() => router.back()}>
-          Cancel
-        </Button>
-      </div>
-    </form>
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {mode === "create" ? "Confirm Monitor Creation" : "Confirm Monitor Update"}
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4 text-left">
+                <p>
+                  You are about to {mode === "create" ? "create" : "update"} a monitor for:
+                </p>
+                <p className="rounded-md bg-muted p-2 font-mono text-sm text-foreground break-all">
+                  {formData.url || "No URL provided"}
+                </p>
+
+                <div className="space-y-2">
+                  <p className="font-semibold text-foreground text-sm">We will:</p>
+                  <ul className="space-y-1.5 text-sm text-muted-foreground">
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 font-bold mt-0.5">&#10003;</span>
+                      Send GET requests to this URL
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 font-bold mt-0.5">&#10003;</span>
+                      Every {intervalOptions.find(o => o.value === formData.interval_seconds)?.label || "5 minutes"}
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 font-bold mt-0.5">&#10003;</span>
+                      Record HTTP status
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 font-bold mt-0.5">&#10003;</span>
+                      Record response time
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 font-bold mt-0.5">&#10003;</span>
+                      Record errors
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="font-semibold text-foreground text-sm">We will not:</p>
+                  <ul className="space-y-1.5 text-sm text-muted-foreground">
+                    <li className="flex items-start gap-2">
+                      <span className="text-red-500 font-bold mt-0.5">&#10007;</span>
+                      Modify your API
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-red-500 font-bold mt-0.5">&#10007;</span>
+                      Access your database
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-red-500 font-bold mt-0.5">&#10007;</span>
+                      Access your server
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-red-500 font-bold mt-0.5">&#10007;</span>
+                      Browse other endpoints
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirm} disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {mode === "create" ? "Create Monitor" : "Update Monitor"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

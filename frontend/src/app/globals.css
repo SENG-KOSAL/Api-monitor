@@ -5,8 +5,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-jetbrains-mono);
+  --font-mono: var(--font-jetbrains-mono);
+  --font-display: var(--font-space-grotesk);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
@@ -29,10 +30,10 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 8px);
+  --radius-md: calc(var(--radius) - 4px);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 6px);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -41,51 +42,151 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Brand tokens exposed as Tailwind utilities: bg-lime, text-amber-signal, etc. */
+  --color-lime: var(--lime);
+  --color-lime-dim: var(--lime-dim);
+  --color-amber-signal: var(--amber-signal);
+  --color-danger-signal: var(--danger-signal);
+  --color-obsidian: var(--obsidian);
+  --color-obsidian-raised: var(--obsidian-raised);
 }
 
 :root {
-  --background: oklch(0.985 0.002 247.839);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.714);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0.002 247.839);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* Obsidian surfaces */
+  --background: #0a0b0d;
+  --obsidian: #0a0b0d;
+  --obsidian-raised: #15171b;
+  --foreground: #e9ede9;
+
+  --card: #14161a;
+  --card-foreground: #e9ede9;
+  --popover: #14161a;
+  --popover-foreground: #e9ede9;
+
+  /* Neon lime as the operational / brand signal */
+  --lime: #c8ff3d;
+  --lime-dim: #96c928;
+  --primary: #c8ff3d;
+  --primary-foreground: #0a0b0d;
+
+  --secondary: #1a1d22;
+  --secondary-foreground: #e9ede9;
+
+  --muted: #16181c;
+  --muted-foreground: #8b9299;
+
+  --accent: #1a1d22;
+  --accent-foreground: #c8ff3d;
+
+  --amber-signal: #ffb648;
+  --danger-signal: #ff5c5c;
+  --destructive: #ff5c5c;
+  --destructive-foreground: #0a0b0d;
+
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.1);
+  --ring: #c8ff3d;
+
+  --chart-1: #c8ff3d;
+  --chart-2: #ffb648;
+  --chart-3: #5ec8ff;
+  --chart-4: #b98bff;
+  --chart-5: #ff5c5c;
+
+  --radius: 1.1rem;
+
+  --sidebar: #101216;
+  --sidebar-foreground: #e9ede9;
+  --sidebar-primary: #c8ff3d;
+  --sidebar-primary-foreground: #0a0b0d;
+  --sidebar-accent: #1a1d22;
+  --sidebar-accent-foreground: #e9ede9;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: #c8ff3d;
 }
 
 @layer base {
   * {
     @apply border-border;
   }
+  html {
+    color-scheme: dark;
+  }
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+    font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+    font-feature-settings: "ss01" 1;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-space-grotesk), var(--font-jetbrains-mono), sans-serif;
+    letter-spacing: -0.01em;
+  }
+}
+
+/* ---------- Floating shell / glassmorphism primitives ---------- */
+
+@layer components {
+  .glass-panel {
+    background: linear-gradient(
+      165deg,
+      rgba(255, 255, 255, 0.05),
+      rgba(255, 255, 255, 0.015)
+    );
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      0 12px 40px -12px rgba(0, 0, 0, 0.55);
+  }
+
+  .glass-nav {
+    background: rgba(16, 18, 22, 0.6);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.07),
+      0 8px 30px -10px rgba(0, 0, 0, 0.6);
+  }
+
+  .grid-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 64px 64px;
+    -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 90%);
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 90%);
+  }
+
+  .noise-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.05;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+
+  .glow-blob {
+    position: fixed;
+    z-index: 0;
+    pointer-events: none;
+    border-radius: 9999px;
+    filter: blur(90px);
+  }
+
+  .status-dot-glow {
+    box-shadow: 0 0 12px 2px currentColor;
   }
 }
 

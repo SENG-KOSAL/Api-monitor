@@ -39,9 +39,9 @@ export default function UptimeStats({ uptime, isLoading }: UptimeStatsProps) {
 
   const getUptimeColor = (percentage: number | null) => {
     if (percentage === null) return "text-muted-foreground";
-    if (percentage >= 99) return "text-green-600";
-    if (percentage >= 95) return "text-yellow-600";
-    return "text-red-600";
+    if (percentage >= 99) return "text-[var(--lime)]";
+    if (percentage >= 95) return "text-[var(--amber-signal)]";
+    return "text-[var(--danger-signal)]";
   };
 
   return (
@@ -54,7 +54,7 @@ export default function UptimeStats({ uptime, isLoading }: UptimeStatsProps) {
           {periods.map(({ key, label, stat }) => (
             <div
               key={key}
-              className="flex flex-col gap-1 p-4 rounded-lg border bg-card"
+              className="flex flex-col gap-1 p-4 rounded-xl border border-white/[0.06] bg-white/[0.02]"
             >
               <p className="text-sm text-muted-foreground">{label}</p>
               <div className="flex items-center gap-2">
@@ -71,11 +71,11 @@ export default function UptimeStats({ uptime, isLoading }: UptimeStatsProps) {
                 </span>
               </div>
               <div className="text-xs text-muted-foreground mt-1">
-                <span className="text-green-600">{stat.successful_checks}</span>
+                <span className="text-[var(--lime)]">{stat.successful_checks}</span>
                 {" / "}
                 <span>{stat.total_checks} checks</span>
                 {stat.failed_checks > 0 && (
-                  <span className="text-red-500 ml-1">
+                  <span className="text-[var(--danger-signal)] ml-1">
                     ({stat.failed_checks} failed)
                   </span>
                 )}

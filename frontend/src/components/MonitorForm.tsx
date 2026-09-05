@@ -353,23 +353,23 @@ export default function MonitorForm({ monitor, mode }: MonitorFormProps) {
                   <p className="font-semibold text-foreground text-sm">We will:</p>
                   <ul className="space-y-1.5 text-sm text-muted-foreground">
                     <li className="flex items-start gap-2">
-                      <span className="text-green-600 font-bold mt-0.5">&#10003;</span>
+                      <span className="text-[var(--lime)] font-bold mt-0.5">&#10003;</span>
                       Send GET requests to this URL
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-green-600 font-bold mt-0.5">&#10003;</span>
+                      <span className="text-[var(--lime)] font-bold mt-0.5">&#10003;</span>
                       Every {intervalOptions.find(o => o.value === formData.interval_seconds)?.label || "5 minutes"}
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-green-600 font-bold mt-0.5">&#10003;</span>
+                      <span className="text-[var(--lime)] font-bold mt-0.5">&#10003;</span>
                       Record HTTP status
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-green-600 font-bold mt-0.5">&#10003;</span>
+                      <span className="text-[var(--lime)] font-bold mt-0.5">&#10003;</span>
                       Record response time
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-green-600 font-bold mt-0.5">&#10003;</span>
+                      <span className="text-[var(--lime)] font-bold mt-0.5">&#10003;</span>
                       Record errors
                     </li>
                   </ul>
@@ -379,19 +379,19 @@ export default function MonitorForm({ monitor, mode }: MonitorFormProps) {
                   <p className="font-semibold text-foreground text-sm">We will not:</p>
                   <ul className="space-y-1.5 text-sm text-muted-foreground">
                     <li className="flex items-start gap-2">
-                      <span className="text-red-500 font-bold mt-0.5">&#10007;</span>
+                      <span className="text-[var(--danger-signal)] font-bold mt-0.5">&#10007;</span>
                       Modify your API
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-red-500 font-bold mt-0.5">&#10007;</span>
+                      <span className="text-[var(--danger-signal)] font-bold mt-0.5">&#10007;</span>
                       Access your database
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-red-500 font-bold mt-0.5">&#10007;</span>
+                      <span className="text-[var(--danger-signal)] font-bold mt-0.5">&#10007;</span>
                       Access your server
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-red-500 font-bold mt-0.5">&#10007;</span>
+                      <span className="text-[var(--danger-signal)] font-bold mt-0.5">&#10007;</span>
                       Browse other endpoints
                     </li>
                   </ul>

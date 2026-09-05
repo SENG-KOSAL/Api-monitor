@@ -11,10 +11,13 @@ interface StatusBadgeProps {
 export default function StatusBadge({ status, isActive }: StatusBadgeProps) {
   if (!isActive) {
     return (
-      <Badge variant="secondary" className="gap-1.5">
+      <Badge
+        variant="outline"
+        className="gap-1.5 border-white/10 bg-white/[0.03] text-muted-foreground"
+      >
         <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full rounded-full bg-gray-400 opacity-75" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-gray-500" />
+          <span className="absolute inline-flex h-full w-full rounded-full bg-muted-foreground/60" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-muted-foreground" />
         </span>
         Paused
       </Badge>
@@ -23,21 +26,21 @@ export default function StatusBadge({ status, isActive }: StatusBadgeProps) {
 
   const statusConfig = {
     healthy: {
-      className: "bg-green-100 text-green-800 border-green-200 hover:bg-green-100",
-      dotClassName: "bg-green-500",
-      pulseClassName: "bg-green-400",
+      className: "border-[var(--lime)]/25 bg-[var(--lime)]/10 text-[var(--lime)] hover:bg-[var(--lime)]/10",
+      dotClassName: "bg-[var(--lime)]",
+      pulseClassName: "bg-[var(--lime)]",
       label: "Healthy",
     },
     error: {
-      className: "bg-red-100 text-red-800 border-red-200 hover:bg-red-100",
-      dotClassName: "bg-red-500",
-      pulseClassName: "bg-red-400",
+      className: "border-[var(--danger-signal)]/30 bg-[var(--danger-signal)]/10 text-[var(--danger-signal)] hover:bg-[var(--danger-signal)]/10",
+      dotClassName: "bg-[var(--danger-signal)]",
+      pulseClassName: "bg-[var(--danger-signal)]",
       label: "Error",
     },
     unknown: {
-      className: "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-100",
-      dotClassName: "bg-yellow-500",
-      pulseClassName: "bg-yellow-400",
+      className: "border-[var(--amber-signal)]/30 bg-[var(--amber-signal)]/10 text-[var(--amber-signal)] hover:bg-[var(--amber-signal)]/10",
+      dotClassName: "bg-[var(--amber-signal)]",
+      pulseClassName: "bg-[var(--amber-signal)]",
       label: "Unknown",
     },
   };
@@ -50,7 +53,7 @@ export default function StatusBadge({ status, isActive }: StatusBadgeProps) {
         {status === "healthy" && (
           <span className={cn("absolute inline-flex h-full w-full rounded-full opacity-75 animate-pulse-ring", config.pulseClassName)} />
         )}
-        <span className={cn("relative inline-flex h-2 w-2 rounded-full", config.dotClassName)} />
+        <span className={cn("relative inline-flex h-2 w-2 rounded-full status-dot-glow", config.dotClassName)} />
       </span>
       {config.label}
     </Badge>

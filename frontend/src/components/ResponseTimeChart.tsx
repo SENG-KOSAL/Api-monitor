@@ -55,7 +55,7 @@ export default function ResponseTimeChart({ results }: ResponseTimeChartProps) {
             timeStyle: "medium",
           })} ICT
         </p>
-        <p className={`text-xs mt-1 ${data.isUp ? "text-green-600" : "text-red-500"}`}>
+        <p className={`text-xs mt-1 ${data.isUp ? "text-[var(--lime)]" : "text-[var(--danger-signal)]"}`}>
           {data.isUp ? "Healthy" : "Failed"}
         </p>
       </div>

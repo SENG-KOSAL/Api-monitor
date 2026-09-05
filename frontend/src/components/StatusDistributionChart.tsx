@@ -9,10 +9,10 @@ interface StatusDistributionChartProps {
 }
 
 const COLORS = {
-  healthy: "oklch(0.6 0.118 184.714)",  // green (chart-2)
-  clientError: "oklch(0.828 0.189 84.429)", // yellow (chart-4)
-  serverError: "oklch(0.577 0.245 27.325)", // red (destructive)
-  error: "oklch(0.556 0 0)",                // gray (muted-foreground)
+  healthy: "#c8ff3d",   // lime
+  clientError: "#ffb648", // amber
+  serverError: "#ff5c5c", // red
+  error: "#8b9299",      // muted gray
 };
 
 export default function StatusDistributionChart({ results }: StatusDistributionChartProps) {

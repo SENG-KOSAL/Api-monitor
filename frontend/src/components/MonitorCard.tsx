@@ -42,17 +42,17 @@ export default function MonitorCard({ monitor, lastCheck, onRefresh, index = 0 }
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: index * 0.1 }}
     >
-      <Card className="group relative overflow-hidden transition-shadow hover:shadow-lg">
+      <Card className="group relative overflow-hidden transition-all hover:border-white/[0.14] hover:-translate-y-0.5">
         <CardHeader className="pb-3">
           <div className="flex justify-between items-start gap-2">
             <div className="flex-1 min-w-0">
               <Link
                 href={`/monitors/${monitor.id}`}
-                className="text-lg font-semibold text-foreground hover:text-primary truncate block transition-colors"
+                className="font-display text-lg font-semibold text-foreground hover:text-[var(--lime)] truncate block transition-colors"
               >
                 {monitor.name}
               </Link>
-              <p className="text-sm text-muted-foreground truncate mt-1 flex items-center gap-1" title={monitor.url}>
+              <p className="text-xs text-muted-foreground truncate mt-1 flex items-center gap-1" title={monitor.url}>
                 <ExternalLink className="h-3 w-3 shrink-0" />
                 {monitor.url}
               </p>
@@ -87,14 +87,14 @@ export default function MonitorCard({ monitor, lastCheck, onRefresh, index = 0 }
               )}
             </div>
             {lastCheck && (
-              <span className="font-medium text-foreground">
+              <span className="font-medium text-[var(--lime)]">
                 {lastCheck.response_time.toFixed(0)}ms
                 {lastCheck.status_code && <span className="text-muted-foreground"> • {lastCheck.status_code}</span>}
               </span>
             )}
           </div>
         </CardContent>
-        <CardFooter className="pt-3 border-t">
+        <CardFooter className="pt-3 border-t border-white/[0.06]">
           <div className="flex items-center justify-between w-full">
             <Button variant="ghost" size="sm" asChild>
               <Link href={`/monitors/${monitor.id}`} className="gap-1.5">

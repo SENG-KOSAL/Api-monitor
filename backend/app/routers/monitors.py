@@ -3,10 +3,11 @@ from sqlalchemy.orm import Session
 from typing import List
 from pydantic import HttpUrl
 
-from app.database.connection import SessionLocal
+from app.dependencies import get_current_user, get_db
 from app.model.monitor import Monitor
 from app.model.check_result import CheckResult
 from app.model.incident import Incident
+from app.model.user import User
 from app.schemas.monitor import MonitorCreate, MonitorUpdate, MonitorResponse
 from app.schemas.check_result import CheckResultResponse
 from app.schemas.incident import IncidentResponse
@@ -23,53 +24,80 @@ router = APIRouter(
 )
 
 
-# Dependency to get DB session
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-@router.get("/", response_model=List[MonitorResponse])
-def get_monitors(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def _get_owned_monitor(db: Session, monitor_id: int, current_user: User) -> Monitor:
     """
-    Retrieve all monitors with pagination.
+    Fetch a monitor by id, scoped to the current user. Returns 404 (not 403)
+    when it exists but belongs to someone else, so a request can't be used
+    to probe which monitor ids exist for other accounts.
     """
-    monitors = db.query(Monitor).offset(skip).limit(limit).all()
-    return monitors
-
-
-@router.get("/{monitor_id}", response_model=MonitorResponse)
-def get_monitor(monitor_id: int, db: Session = Depends(get_db)):
-    """
-    Retrieve a specific monitor by ID.
-    """
-    monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
+    monitor = (
+        db.query(Monitor)
+        .filter(Monitor.id == monitor_id, Monitor.user_id == current_user.id)
+        .first()
+    )
     if monitor is None:
         raise HTTPException(status_code=404, detail="Monitor not found")
     return monitor
 
 
+@router.get("/", response_model=List[MonitorResponse])
+def get_monitors(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Retrieve the current user's monitors, with pagination.
+    """
+    monitors = (
+        db.query(Monitor)
+        .filter(Monitor.user_id == current_user.id)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    return monitors
+
+
+@router.get("/{monitor_id}", response_model=MonitorResponse)
+def get_monitor(
+    monitor_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Retrieve a specific monitor by ID. Must belong to the current user.
+    """
+    return _get_owned_monitor(db, monitor_id, current_user)
+
+
 @router.post("/", response_model=MonitorResponse, status_code=status.HTTP_201_CREATED)
-def create_monitor(monitor: MonitorCreate, db: Session = Depends(get_db)):
+def create_monitor(
+    monitor: MonitorCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """
-    Create a new monitor.
+    Create a new monitor owned by the current user.
     """
-    # Check if monitor with same name already exists
-    existing_monitor = db.query(Monitor).filter(Monitor.name == monitor.name).first()
+    # Monitor names only need to be unique per-user, not globally.
+    existing_monitor = (
+        db.query(Monitor)
+        .filter(Monitor.name == monitor.name, Monitor.user_id == current_user.id)
+        .first()
+    )
     if existing_monitor:
         raise HTTPException(
             status_code=400,
-            detail="Monitor with this name already exists"
+            detail="You already have a monitor with this name"
         )
-    
+
     # Convert HttpUrl to string for SQLAlchemy
     monitor_data = monitor.model_dump()
     if isinstance(monitor_data.get('url'), HttpUrl):
         monitor_data['url'] = str(monitor_data['url'])
-    db_monitor = Monitor(**monitor_data)
+    db_monitor = Monitor(**monitor_data, user_id=current_user.id)
     db.add(db_monitor)
     db.commit()
     db.refresh(db_monitor)
@@ -80,21 +108,29 @@ def create_monitor(monitor: MonitorCreate, db: Session = Depends(get_db)):
 
 
 @router.put("/{monitor_id}", response_model=MonitorResponse)
-def update_monitor(monitor_id: int, monitor: MonitorUpdate, db: Session = Depends(get_db)):
+def update_monitor(
+    monitor_id: int,
+    monitor: MonitorUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """
-    Update an existing monitor.
+    Update an existing monitor. Must belong to the current user.
     """
-    db_monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
-    if db_monitor is None:
-        raise HTTPException(status_code=404, detail="Monitor not found")
-    
-    # Check if name is being updated and if it conflicts with another monitor
+    db_monitor = _get_owned_monitor(db, monitor_id, current_user)
+
+    # Check if name is being updated and if it conflicts with another of this
+    # user's monitors.
     if monitor.name and monitor.name != db_monitor.name:
-        existing_monitor = db.query(Monitor).filter(Monitor.name == monitor.name).first()
+        existing_monitor = (
+            db.query(Monitor)
+            .filter(Monitor.name == monitor.name, Monitor.user_id == current_user.id)
+            .first()
+        )
         if existing_monitor:
             raise HTTPException(
                 status_code=400,
-                detail="Monitor with this name already exists"
+                detail="You already have a monitor with this name"
             )
     
     # Update only the fields that were provided
@@ -168,6 +204,15 @@ def update_monitor(monitor_id: int, monitor: MonitorUpdate, db: Session = Depend
 
     return db_monitor
 
+
+# ---------------------------------------------------------------------------
+# NOTE: the endpoints below (check / results / uptime / incidents) are not
+# part of the currently-required protected set, so they're left open for now.
+# They still look up monitors without scoping to a user, which means a
+# monitor's check history / uptime / incidents can be read (not modified) by
+# anyone who knows its id. Recommended next step: apply the same
+# get_current_user + _get_owned_monitor pattern used above to these too.
+# ---------------------------------------------------------------------------
 
 @router.post("/{monitor_id}/check", response_model=CheckResultResponse)
 def check_monitor_health(monitor_id: int, db: Session = Depends(get_db)):
@@ -291,13 +336,15 @@ def get_incidents(
 
 
 @router.delete("/{monitor_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_monitor(monitor_id: int, db: Session = Depends(get_db)):
+def delete_monitor(
+    monitor_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """
-    Delete a monitor.
+    Delete a monitor. Must belong to the current user.
     """
-    db_monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
-    if db_monitor is None:
-        raise HTTPException(status_code=404, detail="Monitor not found")
+    db_monitor = _get_owned_monitor(db, monitor_id, current_user)
 
     scheduler.remove_monitor(monitor_id)
 

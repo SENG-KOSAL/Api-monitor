@@ -33,6 +33,7 @@ from app.database.connection import Base
 from app.model.monitor import Monitor
 from app.model.incident import Incident
 from app.model.successss import Successss
+from app.model.user import User
 
 target_metadata = Base.metadata
 print(f"Target metadata tables: {list(target_metadata.tables.keys())}")  # DEBUG

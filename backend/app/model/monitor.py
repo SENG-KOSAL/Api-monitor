@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from sqlalchemy import Boolean, DateTime, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.connection import Base
@@ -13,6 +13,16 @@ class Monitor(Base):
     id: Mapped[int] = mapped_column(
         Integer,
         primary_key=True,
+        index=True,
+    )
+
+    # Owner of this monitor. Nullable at the DB level so existing rows created
+    # before authentication was added don't break; every new monitor is
+    # required (at the application layer) to be created with a user_id.
+    user_id: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=True,
         index=True,
     )
 
@@ -99,4 +109,9 @@ class Monitor(Base):
         "Incident",
         cascade="all, delete-orphan",
         back_populates="monitor",
+    )
+
+    owner: Mapped[Optional["User"]] = relationship(
+        "User",
+        back_populates="monitors",
     )

@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database.connection import engine
 
 load_dotenv()
-from app.routers import monitors
+from app.routers import auth, monitors
 from app.services.scheduler import scheduler
 
 logging.basicConfig(
@@ -32,6 +32,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth.router)
 app.include_router(monitors.router)
 
 

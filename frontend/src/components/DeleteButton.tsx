@@ -31,7 +31,7 @@ export default function DeleteButton({ monitor, onDeleted }: DeleteButtonProps) 
     if (onDeleted) {
       onDeleted();
     } else {
-      router.push("/");
+      router.push("/dashboard");
     }
   };
 

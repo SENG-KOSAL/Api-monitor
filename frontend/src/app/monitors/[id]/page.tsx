@@ -86,7 +86,7 @@ export default function MonitorDetailPage({
       >
         <Button
           variant="ghost"
-          onClick={() => router.push("/")}
+          onClick={() => router.push("/dashboard")}
           className="gap-1.5"
         >
           <ArrowLeft className="h-4 w-4" />

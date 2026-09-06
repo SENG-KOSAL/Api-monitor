@@ -109,7 +109,7 @@ export default function MonitorForm({ monitor, mode }: MonitorFormProps) {
           auth_password: formData.auth_type === "basic" ? formData.auth_password : undefined,
         };
         await createMonitor.mutateAsync(data);
-        router.push("/");
+        router.push("/dashboard");
       } else if (monitor) {
         const data: MonitorUpdate = {
           name: formData.name,

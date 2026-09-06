@@ -1,16 +1,74 @@
-import { Monitor, MonitorCreate, MonitorUpdate, CheckResult, MonitorUptime, Incident } from "@/types";
+import {
+  Monitor,
+  MonitorCreate,
+  MonitorUpdate,
+  CheckResult,
+  MonitorUptime,
+  Incident,
+  User,
+  RegisterData,
+  LoginData,
+  AuthToken,
+} from "@/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const TOKEN_KEY = "pulse_auth_token";
+
+// ---------------------------------------------------------------------------
+// Token storage — a thin wrapper so every place that needs the token (the
+// fetch helper below, AuthContext, etc.) agrees on where it lives.
+// ---------------------------------------------------------------------------
+
+export function getToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(TOKEN_KEY);
+}
+
+export function setToken(token: string) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function clearToken() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(TOKEN_KEY);
+}
+
+// Fired whenever a request comes back 401, so AuthContext can react (clear
+// user state, send the person to /login) without fetchAPI needing to know
+// about React or routing.
+const UNAUTHORIZED_EVENT = "pulse:unauthorized";
+
+function notifyUnauthorized() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
+}
+
+export function onUnauthorized(callback: () => void) {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener(UNAUTHORIZED_EVENT, callback);
+  return () => window.removeEventListener(UNAUTHORIZED_EVENT, callback);
+}
 
 async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
+  const token = getToken();
+
   const response = await fetch(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options?.headers,
     },
   });
+
+  if (response.status === 401) {
+    clearToken();
+    notifyUnauthorized();
+    const error = await response.json().catch(() => ({ detail: "Authentication required" }));
+    throw new Error(error.detail || "Authentication required");
+  }
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: "Unknown error" }));
@@ -23,6 +81,38 @@ async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> 
 
   return response.json();
 }
+
+export const authAPI = {
+  register: (data: RegisterData) =>
+    fetchAPI<User>("/auth/register", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  // The backend uses FastAPI's standard OAuth2 password form, which expects
+  // application/x-www-form-urlencoded fields named "username" and
+  // "password" — not JSON. "username" is set to the user's email.
+  login: async (data: LoginData): Promise<AuthToken> => {
+    const body = new URLSearchParams();
+    body.set("username", data.email);
+    body.set("password", data.password);
+
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: "Login failed" }));
+      throw new Error(error.detail || "Login failed");
+    }
+
+    return response.json();
+  },
+
+  me: () => fetchAPI<User>("/auth/me"),
+};
 
 export const monitorsAPI = {
   getAll: (skip = 0, limit = 100) =>

@@ -92,7 +92,7 @@ export default function DashboardPage() {
         className="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4"
       >
         <div>
-          <h1 className="text-3xl font-display font-semibold text-foreground">Dashboard</h1>
+          <h1 className="text-3xl font-display font-semibold text-foreground">My Monitors</h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
             {total} monitor{total !== 1 ? "s" : ""} configured across your APIs.
           </p>

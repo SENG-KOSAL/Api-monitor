@@ -26,17 +26,24 @@ router = APIRouter(
 
 def _get_owned_monitor(db: Session, monitor_id: int, current_user: User) -> Monitor:
     """
-    Fetch a monitor by id, scoped to the current user. Returns 404 (not 403)
-    when it exists but belongs to someone else, so a request can't be used
-    to probe which monitor ids exist for other accounts.
+    Authorization check: does this monitor exist, and does it belong to the
+    current user?
+
+    - Doesn't exist at all               -> 404 Not Found
+    - Exists, but belongs to another user -> 403 Forbidden
+    - Exists and belongs to current user  -> returned
+
+    This is what stops User A from reading or modifying User B's monitors
+    just by guessing/incrementing an id.
     """
-    monitor = (
-        db.query(Monitor)
-        .filter(Monitor.id == monitor_id, Monitor.user_id == current_user.id)
-        .first()
-    )
+    monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
     if monitor is None:
         raise HTTPException(status_code=404, detail="Monitor not found")
+    if monitor.user_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="You don't have permission to access this monitor",
+        )
     return monitor
 
 
@@ -67,7 +74,7 @@ def get_monitor(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Retrieve a specific monitor by ID. Must belong to the current user.
+    Retrieve a specific monitor by ID. 403s if it belongs to someone else.
     """
     return _get_owned_monitor(db, monitor_id, current_user)
 
@@ -115,7 +122,7 @@ def update_monitor(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Update an existing monitor. Must belong to the current user.
+    Update an existing monitor. 403s if it belongs to someone else.
     """
     db_monitor = _get_owned_monitor(db, monitor_id, current_user)
 
@@ -205,24 +212,18 @@ def update_monitor(
     return db_monitor
 
 
-# ---------------------------------------------------------------------------
-# NOTE: the endpoints below (check / results / uptime / incidents) are not
-# part of the currently-required protected set, so they're left open for now.
-# They still look up monitors without scoping to a user, which means a
-# monitor's check history / uptime / incidents can be read (not modified) by
-# anyone who knows its id. Recommended next step: apply the same
-# get_current_user + _get_owned_monitor pattern used above to these too.
-# ---------------------------------------------------------------------------
-
 @router.post("/{monitor_id}/check", response_model=CheckResultResponse)
-def check_monitor_health(monitor_id: int, db: Session = Depends(get_db)):
+def check_monitor_health(
+    monitor_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """
-    Perform a health check on a specific monitor.
+    Perform a health check on a specific monitor. 403s if it belongs to
+    someone else.
     """
-    monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
-    if monitor is None:
-        raise HTTPException(status_code=404, detail="Monitor not found")
-    
+    monitor = _get_owned_monitor(db, monitor_id, current_user)
+
     # Perform the health check with authentication headers if configured
     headers = build_auth_headers(
         monitor.auth_type,
@@ -258,14 +259,13 @@ def get_monitor_results(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Retrieve health check history for a specific monitor.
-    Results are ordered by most recent first, bounded by limit.
+    Retrieve health check history for a specific monitor. 403s if it
+    belongs to someone else.
     """
-    monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
-    if monitor is None:
-        raise HTTPException(status_code=404, detail="Monitor not found")
+    _get_owned_monitor(db, monitor_id, current_user)
 
     results = (
         db.query(CheckResult)
@@ -279,27 +279,33 @@ def get_monitor_results(
 
 
 @router.get("/{monitor_id}/uptime", response_model=MonitorUptime)
-def get_monitor_uptime(monitor_id: int, db: Session = Depends(get_db)):
+def get_monitor_uptime(
+    monitor_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """
     Calculate uptime percentage for a monitor over the last 24h, 7d, and 30d.
     A check counts as "up" only when it has no error and its status code
-    falls within the 2xx or 3xx range.
+    falls within the 2xx or 3xx range. 403s if the monitor belongs to
+    someone else.
     """
-    monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
-    if monitor is None:
-        raise HTTPException(status_code=404, detail="Monitor not found")
+    _get_owned_monitor(db, monitor_id, current_user)
 
     return calculate_uptime(db, monitor_id)
 
 
 @router.get("/{monitor_id}/incidents/active", response_model=List[IncidentResponse])
-def get_active_incidents(monitor_id: int, db: Session = Depends(get_db)):
+def get_active_incidents(
+    monitor_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """
     Retrieve currently open incidents for a monitor (live dashboard card).
+    403s if the monitor belongs to someone else.
     """
-    monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
-    if monitor is None:
-        raise HTTPException(status_code=404, detail="Monitor not found")
+    _get_owned_monitor(db, monitor_id, current_user)
 
     incidents = (
         db.query(Incident)
@@ -316,13 +322,13 @@ def get_incidents(
     skip: int = 0,
     limit: int = 50,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Retrieve incident history for a monitor, ordered by most recent first.
+    403s if the monitor belongs to someone else.
     """
-    monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
-    if monitor is None:
-        raise HTTPException(status_code=404, detail="Monitor not found")
+    _get_owned_monitor(db, monitor_id, current_user)
 
     incidents = (
         db.query(Incident)
@@ -342,7 +348,7 @@ def delete_monitor(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Delete a monitor. Must belong to the current user.
+    Delete a monitor. 403s if it belongs to someone else.
     """
     db_monitor = _get_owned_monitor(db, monitor_id, current_user)
 

@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from app.database.connection import SessionLocal
-from app.model.user import User
+from app.model.user import User, UserRole
 from app.services.security import decode_access_token
 
 # tokenUrl is only used to populate FastAPI's interactive docs ("Authorize"
@@ -51,3 +51,18 @@ def get_current_user(
         )
 
     return user
+
+
+def require_admin(current_user: User = Depends(get_current_user)) -> User:
+    """
+    Authorization check for admin-only endpoints (see app/routers/admin.py).
+    Builds on get_current_user, so by the time this runs the token has
+    already been validated and the account confirmed active — this only
+    adds the role check on top.
+    """
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
+        )
+    return current_user

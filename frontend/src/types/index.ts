@@ -78,12 +78,25 @@ export interface Incident {
   created_at: string;
 }
 
+export type UserRole = "admin" | "developer";
+
 export interface User {
   id: number;
   email: string;
   full_name: string | null;
   is_active: boolean;
+  role: UserRole;
   created_at: string;
+}
+
+export interface PlatformOverview {
+  total_users: number;
+  active_users: number;
+  disabled_users: number;
+  admin_count: number;
+  developer_count: number;
+  total_monitors: number;
+  active_monitors: number;
 }
 
 export interface RegisterData {

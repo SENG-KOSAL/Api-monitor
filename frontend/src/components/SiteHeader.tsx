@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
-import { Activity, LogOut, Plus } from "lucide-react";
+import { Activity, LogOut, Plus, ShieldCheck } from "lucide-react";
 
 const navLinks = [
   { label: "Product", href: "/product" },
@@ -17,15 +17,23 @@ export default function SiteHeader() {
   const pathname = usePathname();
   const { user, isAuthenticated, isLoading, logout } = useAuth();
 
-  // Once someone is inside the working app (dashboard or a monitor's pages),
-  // the logo should take them back to their monitors, not the marketing page.
-  const inApp = pathname.startsWith("/dashboard") || pathname.startsWith("/monitors");
+  // Once someone is inside the working app (dashboard, a monitor's pages, or
+  // the admin area), the logo should take them back to their own working
+  // area, not the marketing page.
+  const inApp =
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/monitors") ||
+    pathname.startsWith("/admin");
   const logoHref = inApp ? "/dashboard" : "/";
 
   const isActive = (href: string) => {
     if (href.startsWith("/#")) return false; // anchors never show as the active route
     return pathname === href || pathname.startsWith(`${href}/`);
   };
+
+  const links = user?.role === "admin"
+    ? [...navLinks, { label: "Admin", href: "/admin" }]
+    : navLinks;
 
   return (
     <header className="sticky top-4 z-50 px-4 sm:px-6 lg:px-8">
@@ -42,19 +50,20 @@ export default function SiteHeader() {
             </Link>
 
             <nav className="hidden md:flex items-center gap-1">
-              {navLinks.map((link) => {
+              {links.map((link) => {
                 const active = isActive(link.href);
                 return (
                   <Link
                     key={link.label}
                     href={link.href}
                     className={[
-                      "px-3 py-2 text-sm rounded-lg transition-colors",
+                      "px-3 py-2 text-sm rounded-lg transition-colors flex items-center gap-1",
                       active
                         ? "text-[var(--lime)] bg-[var(--lime)]/10"
                         : "text-muted-foreground hover:text-foreground hover:bg-white/5",
                     ].join(" ")}
                   >
+                    {link.label === "Admin" && <ShieldCheck className="h-3.5 w-3.5" />}
                     {link.label}
                   </Link>
                 );

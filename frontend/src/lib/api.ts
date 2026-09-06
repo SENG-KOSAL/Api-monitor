@@ -6,6 +6,8 @@ import {
   MonitorUptime,
   Incident,
   User,
+  UserRole,
+  PlatformOverview,
   RegisterData,
   LoginData,
   AuthToken,
@@ -168,4 +170,27 @@ export const monitorsAPI = {
 
   getIncidents: (id: number, skip = 0, limit = 50) =>
     fetchAPI<Incident[]>(`/monitors/${id}/incidents?skip=${skip}&limit=${limit}`),
+};
+
+// Admin-only endpoints — the backend 403s every one of these unless the
+// caller's account has role "admin" (see app/dependencies.py::require_admin).
+export const adminAPI = {
+  getOverview: () => fetchAPI<PlatformOverview>("/api/admin/overview"),
+
+  getUsers: (skip = 0, limit = 100) =>
+    fetchAPI<User[]>(`/api/admin/users?skip=${skip}&limit=${limit}`),
+
+  getUser: (id: number) => fetchAPI<User>(`/api/admin/users/${id}`),
+
+  updateUserStatus: (id: number, is_active: boolean) =>
+    fetchAPI<User>(`/api/admin/users/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ is_active }),
+    }),
+
+  updateUserRole: (id: number, role: UserRole) =>
+    fetchAPI<User>(`/api/admin/users/${id}/role`, {
+      method: "PATCH",
+      body: JSON.stringify({ role }),
+    }),
 };

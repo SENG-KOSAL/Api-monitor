@@ -8,7 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database.connection import engine
 
 load_dotenv()
-from app.routers import auth, monitors
+from app.routers import admin, auth, monitors
+from app.services.bootstrap_admin import bootstrap_first_admin
 from app.services.scheduler import scheduler
 
 logging.basicConfig(
@@ -34,10 +35,12 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(monitors.router)
+app.include_router(admin.router)
 
 
 @app.on_event("startup")
 async def startup_event():
+    bootstrap_first_admin()
     scheduler.start()
 
 

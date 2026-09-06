@@ -20,6 +20,7 @@ class UserResponse(BaseModel):
     email: EmailStr
     full_name: Optional[str] = None
     is_active: bool
+    role: str
     created_at: datetime
 
     class Config:

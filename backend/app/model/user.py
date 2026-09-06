@@ -7,6 +7,19 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database.connection import Base
 
 
+class UserRole:
+    """
+    Plain string role constants (not a native DB enum, to match the rest of
+    the codebase — see Monitor.auth_type) so adding a new role later is just
+    a migration + a new constant, never a destructive type change.
+    """
+
+    ADMIN = "admin"
+    DEVELOPER = "developer"
+
+    ALL = {ADMIN, DEVELOPER}
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -36,6 +49,16 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         default=True,
+        nullable=False,
+    )
+
+    # DEVELOPER: manages only their own monitors/results.
+    # ADMIN: can view/enable/disable users and change roles (see
+    # app/dependencies.py::require_admin and app/routers/admin.py).
+    role: Mapped[str] = mapped_column(
+        String(20),
+        default=UserRole.DEVELOPER,
+        server_default=UserRole.DEVELOPER,
         nullable=False,
     )
 

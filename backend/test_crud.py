@@ -34,6 +34,8 @@ def test_create_monitor():
     assert data["url"] == "https://api.example.com/health"
     assert data["interval_seconds"] == 300
     assert data["is_active"] == True
+    assert data["auth_type"] == "none"
+    assert data["auth_token"] is None
     assert "id" in data
     assert "created_at" in data
     assert "updated_at" in data
@@ -63,7 +65,9 @@ def test_update_monitor(monitor_id):
     """Test updating a monitor"""
     update_data = {
         "name": "Updated MyHR API",
-        "interval_seconds": 600
+        "interval_seconds": 600,
+        "auth_type": "bearer",
+        "auth_token": "token-12345"
     }
     response = client.put(f"/monitors/{monitor_id}", json=update_data)
     assert response.status_code == 200
@@ -71,6 +75,15 @@ def test_update_monitor(monitor_id):
     assert data["name"] == "Updated MyHR API"
     assert data["interval_seconds"] == 600
     assert data["url"] == "https://api.example.com/health"  # Unchanged
+    assert data["auth_type"] == "bearer"
+    assert data["auth_token"] == "token-12345"
+
+    # Switch back to none
+    response = client.put(f"/monitors/{monitor_id}", json={"auth_type": "none"})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["auth_type"] == "none"
+    assert data["auth_token"] is None
     print("✓ Update monitor works")
 
 def test_delete_monitor(monitor_id):

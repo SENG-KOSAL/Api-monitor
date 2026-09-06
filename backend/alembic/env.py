@@ -31,6 +31,7 @@ if config.config_file_name is not None:
 # target_metadata = mymodel.Base.metadata
 from app.database.connection import Base
 from app.model.monitor import Monitor
+from app.model.incident import Incident
 from app.model.successss import Successss
 
 target_metadata = Base.metadata

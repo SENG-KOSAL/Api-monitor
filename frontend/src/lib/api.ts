@@ -1,4 +1,4 @@
-import { Monitor, MonitorCreate, MonitorUpdate, CheckResult, MonitorUptime } from "@/types";
+import { Monitor, MonitorCreate, MonitorUpdate, CheckResult, MonitorUptime, Incident } from "@/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -58,4 +58,10 @@ export const monitorsAPI = {
 
   getUptime: (id: number) =>
     fetchAPI<MonitorUptime>(`/monitors/${id}/uptime`),
+
+  getActiveIncidents: (id: number) =>
+    fetchAPI<Incident[]>(`/monitors/${id}/incidents/active`),
+
+  getIncidents: (id: number, skip = 0, limit = 50) =>
+    fetchAPI<Incident[]>(`/monitors/${id}/incidents?skip=${skip}&limit=${limit}`),
 };

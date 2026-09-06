@@ -6,10 +6,13 @@ from pydantic import HttpUrl
 from app.database.connection import SessionLocal
 from app.model.monitor import Monitor
 from app.model.check_result import CheckResult
+from app.model.incident import Incident
 from app.schemas.monitor import MonitorCreate, MonitorUpdate, MonitorResponse
 from app.schemas.check_result import CheckResultResponse
+from app.schemas.incident import IncidentResponse
 from app.schemas.uptime import MonitorUptime
-from app.services import check_health, calculate_uptime
+from app.services import check_health, calculate_uptime, build_auth_headers
+from app.services.detect_incidents import detect_incident
 from app.services.scheduler import scheduler
 
 
@@ -99,6 +102,62 @@ def update_monitor(monitor_id: int, monitor: MonitorUpdate, db: Session = Depend
     # Convert HttpUrl to string for SQLAlchemy
     if 'url' in update_data and isinstance(update_data['url'], HttpUrl):
         update_data['url'] = str(update_data['url'])
+    
+    # Handle authentication fields logic
+    if update_data.get('auth_type') == 'none':
+        update_data['auth_token'] = None
+        update_data['auth_username'] = None
+        update_data['auth_password'] = None
+    elif update_data.get('auth_type') == 'bearer':
+        token = update_data.get('auth_token', db_monitor.auth_token)
+        if not token or not token.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="Bearer token is required when authentication type is 'bearer'"
+            )
+        update_data['auth_token'] = token.strip()
+        update_data['auth_username'] = None
+        update_data['auth_password'] = None
+    elif update_data.get('auth_type') == 'basic':
+        username = update_data.get('auth_username', db_monitor.auth_username)
+        password = update_data.get('auth_password', db_monitor.auth_password)
+        if not username or not username.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="Username is required when authentication type is 'basic'"
+            )
+        if not password or not password.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="Password is required when authentication type is 'basic'"
+            )
+        update_data['auth_username'] = username.strip()
+        update_data['auth_password'] = password.strip()
+        update_data['auth_token'] = None
+    elif update_data.get('auth_type') is None:
+        if db_monitor.auth_type == 'bearer' and 'auth_token' in update_data:
+            if not update_data['auth_token'] or not update_data['auth_token'].strip():
+                raise HTTPException(
+                    status_code=400,
+                    detail="Bearer token cannot be empty when authentication type is 'bearer'"
+                )
+            update_data['auth_token'] = update_data['auth_token'].strip()
+        elif db_monitor.auth_type == 'basic':
+            if 'auth_username' in update_data:
+                if not update_data['auth_username'] or not update_data['auth_username'].strip():
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Username cannot be empty when authentication type is 'basic'"
+                    )
+                update_data['auth_username'] = update_data['auth_username'].strip()
+            if 'auth_password' in update_data:
+                if not update_data['auth_password'] or not update_data['auth_password'].strip():
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Password cannot be empty when authentication type is 'basic'"
+                    )
+                update_data['auth_password'] = update_data['auth_password'].strip()
+
     for field, value in update_data.items():
         setattr(db_monitor, field, value)
     
@@ -119,8 +178,14 @@ def check_monitor_health(monitor_id: int, db: Session = Depends(get_db)):
     if monitor is None:
         raise HTTPException(status_code=404, detail="Monitor not found")
     
-    # Perform the health check
-    result = check_health(monitor.url)
+    # Perform the health check with authentication headers if configured
+    headers = build_auth_headers(
+        monitor.auth_type,
+        monitor.auth_token,
+        monitor.auth_username,
+        monitor.auth_password,
+    )
+    result = check_health(monitor.url, headers=headers)
 
     # Persist as CheckResult row
     check_result = CheckResult(
@@ -135,6 +200,9 @@ def check_monitor_health(monitor_id: int, db: Session = Depends(get_db)):
     db.add(check_result)
     db.commit()
     db.refresh(check_result)
+
+    detect_incident(db, monitor, check_result)
+    db.commit()
 
     return check_result
 
@@ -177,6 +245,49 @@ def get_monitor_uptime(monitor_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Monitor not found")
 
     return calculate_uptime(db, monitor_id)
+
+
+@router.get("/{monitor_id}/incidents/active", response_model=List[IncidentResponse])
+def get_active_incidents(monitor_id: int, db: Session = Depends(get_db)):
+    """
+    Retrieve currently open incidents for a monitor (live dashboard card).
+    """
+    monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
+    if monitor is None:
+        raise HTTPException(status_code=404, detail="Monitor not found")
+
+    incidents = (
+        db.query(Incident)
+        .filter(Incident.monitor_id == monitor_id, Incident.status == "open")
+        .order_by(Incident.started_at.desc())
+        .all()
+    )
+    return incidents
+
+
+@router.get("/{monitor_id}/incidents", response_model=List[IncidentResponse])
+def get_incidents(
+    monitor_id: int,
+    skip: int = 0,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+):
+    """
+    Retrieve incident history for a monitor, ordered by most recent first.
+    """
+    monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
+    if monitor is None:
+        raise HTTPException(status_code=404, detail="Monitor not found")
+
+    incidents = (
+        db.query(Incident)
+        .filter(Incident.monitor_id == monitor_id)
+        .order_by(Incident.started_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    return incidents
 
 
 @router.delete("/{monitor_id}", status_code=status.HTTP_204_NO_CONTENT)

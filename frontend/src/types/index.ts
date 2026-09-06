@@ -3,6 +3,10 @@ export interface Monitor {
   name: string;
   url: string;
   interval_seconds: number;
+  auth_type: "none" | "bearer" | "basic";
+  auth_token?: string | null;
+  auth_username?: string | null;
+  auth_password?: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -12,6 +16,10 @@ export interface MonitorCreate {
   name: string;
   url: string;
   interval_seconds?: number;
+  auth_type?: "none" | "bearer" | "basic";
+  auth_token?: string | null;
+  auth_username?: string | null;
+  auth_password?: string | null;
   is_active?: boolean;
 }
 
@@ -19,6 +27,10 @@ export interface MonitorUpdate {
   name?: string;
   url?: string;
   interval_seconds?: number;
+  auth_type?: "none" | "bearer" | "basic";
+  auth_token?: string | null;
+  auth_username?: string | null;
+  auth_password?: string | null;
   is_active?: boolean;
 }
 
@@ -51,4 +63,17 @@ export interface MonitorUptime {
   day: UptimeStats;
   week: UptimeStats;
   month: UptimeStats;
+}
+
+export interface Incident {
+  id: number;
+  monitor_id: number;
+  status: "open" | "resolved";
+  started_at: string;
+  resolved_at: string | null;
+  reason: string;
+  duration_seconds: number | null;
+  first_check_result_id: number | null;
+  last_check_result_id: number | null;
+  created_at: string;
 }

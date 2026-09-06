@@ -34,6 +34,20 @@ export function clearToken() {
   window.localStorage.removeItem(TOKEN_KEY);
 }
 
+// Read the `exp` claim out of a JWT without verifying its signature — we
+// only use this client-side to know *when* to proactively log the person
+// out; the backend is what actually enforces the token is valid.
+export function getTokenExpiryMs(token: string): number | null {
+  try {
+    const payload = token.split(".")[1];
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const json = JSON.parse(atob(normalized));
+    return typeof json.exp === "number" ? json.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
 // Fired whenever a request comes back 401, so AuthContext can react (clear
 // user state, send the person to /login) without fetchAPI needing to know
 // about React or routing.

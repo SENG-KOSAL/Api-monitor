@@ -1,9 +1,17 @@
-from pydantic import BaseModel, Field, HttpUrl, model_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
 from typing import Optional, Literal
 from datetime import datetime
 
 
 class MonitorBase(BaseModel):
+    # Reject any field the client sends that we don't explicitly declare
+    # here — most importantly `user_id`. Ownership is never taken from the
+    # request body; it's always derived from the authenticated user in the
+    # route handler. Without this, an unknown field like {"user_id": 999}
+    # would be silently dropped (Pydantic's default), which works but gives
+    # no feedback; "forbid" turns that into a clear 422 instead.
+    model_config = ConfigDict(extra="forbid")
+
     name: str = Field(..., min_length=1, max_length=255, description="Name of the monitor")
     url: HttpUrl = Field(..., description="URL to monitor")
     interval_seconds: int = Field(300, ge=10, le=86400, description="Interval in seconds between health checks")
@@ -42,6 +50,8 @@ class MonitorCreate(MonitorBase):
 
 
 class MonitorUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     url: Optional[HttpUrl] = None
     interval_seconds: Optional[int] = Field(None, ge=10, le=86400)

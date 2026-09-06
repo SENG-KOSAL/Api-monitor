@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { AlertCircle, Loader2, LogIn } from "lucide-react";
+import { AlertCircle, Clock, Loader2, LogIn } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/dashboard";
+  const sessionExpired = searchParams.get("reason") === "expired";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -52,6 +53,15 @@ function LoginForm() {
             </p>
           </CardHeader>
           <CardContent>
+            {sessionExpired && !error && (
+              <Alert className="mb-5 border-[var(--amber-signal)]/30 bg-[var(--amber-signal)]/10 text-[var(--amber-signal)] [&>svg]:text-[var(--amber-signal)]">
+                <Clock className="h-4 w-4" />
+                <AlertDescription>
+                  Your session expired. Log in again to continue.
+                </AlertDescription>
+              </Alert>
+            )}
+
             {error && (
               <Alert variant="destructive" className="mb-5">
                 <AlertCircle className="h-4 w-4" />
